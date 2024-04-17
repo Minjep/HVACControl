@@ -192,3 +192,9 @@ codegen/
 
 # Octave session info
 octave-workspace
+
+
+# Pickle and csvs
+
+*.pkl
+*.csv
