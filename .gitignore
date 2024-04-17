@@ -198,3 +198,5 @@ octave-workspace
 
 *.pkl
 *.csv
+
+*.mat
