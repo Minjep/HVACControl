@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 from AirmasterDataLib.loadData import load_data, load_telemetry, translate_telemetry
 from AirmasterDataLib.process.filter_data import getData,convertUnixToRealTime, convertUnixTimeAndFillMissingData, makePklFile, loadPklFile,adjustStartEndTime,removeNightAndWeekend,detect_and_filter_outliers,adjustResolution,dataframe_to_csv
 def process_data_and_create_csv(force=False,createCSV=False):
-    # create 15 min intervals and the other pkl files, if they do not exist
+    # step by step processing of new data, and then creating a csv file at the end
     if force or not os.path.exists('processedData.pkl'):
         print ("processedData not found, converting data to unix time and filling missing data...")
         dataOld, tele_map = getData()
