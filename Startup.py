@@ -6,12 +6,18 @@ DatasetFolders = [
     r"C:\Users\jeppe\OneDrive - Aalborg Universitet\8. Semester Shared work\data_45\404000135",
     r"C:\Users\jeppe\OneDrive - Aalborg Universitet\8. Semester Shared work\data_45\404000138",
     r"C:\Users\jeppe\OneDrive - Aalborg Universitet\8. Semester Shared work\data_45\404000140",
+    r"/Users/jakob/Library/CloudStorage/OneDrive-AalborgUniversitet/8. Semester Shared work/data_45/404000135",
+    r"/Users/jakob/Library/CloudStorage/OneDrive-AalborgUniversitet/8. Semester Shared work/data_45/404000138",
+    r"/Users/jakob/Library/CloudStorage/OneDrive-AalborgUniversitet/8. Semester Shared work/data_45/404000140",
 ]
 # add specific pkl files to this path
 Files = [
     r"C:\Users\jeppe\OneDrive - Aalborg Universitet\8. Semester Shared work\data_45\404000135\404000135.pkl",
     r"C:\Users\jeppe\OneDrive - Aalborg Universitet\8. Semester Shared work\data_45\404000138\404000138.pkl",
     r"C:\Users\jeppe\OneDrive - Aalborg Universitet\8. Semester Shared work\data_45\404000140\404000140.pkl",
+    r"/Users/jakob/Library/CloudStorage/OneDrive-AalborgUniversitet/8. Semester Shared work/data_45/404000135/404000135.pkl",
+    r"/Users/jakob/Library/CloudStorage/OneDrive-AalborgUniversitet/8. Semester Shared work/data_45/404000138/404000138.pkl",
+    r"/Users/jakob/Library/CloudStorage/OneDrive-AalborgUniversitet/8. Semester Shared work/data_45/404000140/404000140.pkl",
 ]
 
 # add specific telemetry files to this path
@@ -19,6 +25,7 @@ TelemetryFiles = [
     r"AirmasterControl\AirMasterData\telemetry.json",
     r"AirMasterData\telemetry.json",
     r"C:\Users\jeppe\gits\HVACControl\AirMasterData\telemetry.json",
+    r"/Users/jakob/Documents/gits/HVACControl/AirMasterData/telemetry.json",
 ]
 
 # Loops through the folders and loads the data to check if they are available

@@ -200,3 +200,4 @@ octave-workspace
 *.csv
 
 *.mat
+*.ini

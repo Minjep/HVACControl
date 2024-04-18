@@ -1,4 +1,5 @@
 from ..loadData import load_and_plot
+from AirmasterDataLib.config import get_dataset_file
 import matplotlib.pyplot as plt
 import os
 from datetime import datetime, timedelta, timezone
@@ -56,7 +57,7 @@ def makePklFile(dataToBeConverted,fileName):
         pickle.dump(dataToBeConverted, f)
             
 def loadPklFile(filename):
-    if filename.endswith(".pkl"):
+    if filename.endswith(".pkl"):  
         with open(filename, 'rb') as f:
             data = pickle.load(f)
     else:
@@ -80,7 +81,7 @@ def removeNightAndWeekend(data,makeFile=False):
     weekday_mask = real_time_format.dt.weekday.isin(range(0, 5))
     day_time_data = time_mask & weekday_mask
     data = data[day_time_data]
-    data = data.reset_index()
+    data = data.reset_index(drop=True)
         
     if makeFile:
         makePklFile(data,'dayTimeData.pkl')
@@ -179,3 +180,14 @@ def detect_and_filter_outliers(data, var_to_be_detected=[],threshold=3.5,makeFil
         makePklFile(data,'finalData.pkl')
     return data
          
+
+def dataframe_to_csv(data):
+    path_name = load_and_plot.get_dataset_file()
+    
+    
+    parts = path_name.split('/')
+    HVAC_unit = parts[-1]
+    HVAC_unit_without_extension = HVAC_unit.rstrip('.pkl')
+    filename = "processed_full_resolution_" + HVAC_unit_without_extension + ".csv"
+    
+    data.to_csv(filename, index=False) 
