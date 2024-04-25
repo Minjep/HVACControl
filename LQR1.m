@@ -193,13 +193,12 @@ p=pole(sys_new);
 
 L = place(A_new', C_new', p)';
 v=inv(eye(10)-A_cl')*C'*Q;
-Nbar=K_rf*v;
 
 At = [ A-B*K             B*K
        zeros(size(A))    A-L*C ];
 
-Bt = [    B*Nbar
-       zeros(size(B*Nbar)) ];
+Bt = [    B
+       zeros(size(B)) ];
 
 Ct = [ C    zeros(size(C)) ];
 
