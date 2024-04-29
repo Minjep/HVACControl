@@ -45,6 +45,22 @@ void setup() {
   }
 }
 
+
+
+// Function to convert latitude and longitude in degrees to meters
+std::pair<double, double> convertLatLonToMeters(double latitude, double longitude) {
+    const double DEG_TO_RAD = M_PI / 180.0;
+    const double METERS_PER_DEGREE_LAT = 111320.0; // Approximate meters per degree latitude
+
+    // Latitude conversion: straightforward multiplication
+    double latMeters = latitude * METERS_PER_DEGREE_LAT;
+
+    // Longitude conversion: depends on latitude
+    double lonMeters = longitude * METERS_PER_DEGREE_LAT * cos(latitude * DEG_TO_RAD);
+
+    return {latMeters, lonMeters};
+}
+
 void loop() {
   // Empty loop function since the main code is in setup()
 }
