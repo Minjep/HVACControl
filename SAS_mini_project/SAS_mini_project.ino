@@ -1,6 +1,5 @@
-#include "IMUSensor.h"
+#include "ICMSensor.h"
 #include "GNSSSensor.h"
-#include "Magnetometer.h"
 #include <Wire.h>
 
 constexpr struct {
@@ -12,8 +11,7 @@ constexpr struct {
   const float samplingTime = 0;
 } Global;
 
-IMUSensor IMUSensor;
-Magnetometer Magnetometer;
+ICMSensor ICMSensor;
 GNSSSensor GNSSSensor;
 
 
@@ -26,56 +24,38 @@ void setup() {
     ;
 
 
-  digitalWrite(2, HIGH); // sets the digital pin 13 on
-  delay(1000);            // waits for a second
-  digitalWrite(2, LOW);  // sets the digital pin 13 off
-  delay(1000); 
 
   Wire.begin();
+  Wire.setClock(400000);
   delay(100);
-  IMUSensor.Initialize();
-  delay(100);
-  Magnetometer.Initialize();
+  ICMSensor.Initialize();
   delay(100);
   GNSSSensor.Initialize();
   delay(100);
+  
+  
 }
 
 
 
-float accelerationX, accelerationY, accelerationZ = 0;
-float angularVelocityX, angularVelocityY, angularVelocityZ = 0;
 
 long lastTime = 0;
-int i = 1;
 void loop() {
-
-
-  if (millis() - lastTime > 1000) {
+  if (millis() - lastTime > 100) {
     lastTime = millis();
-    Serial.println();
-    //auto [accelerationX,accelerationY,accelerationZ] = IMUSensor.GetAccelerometerMeasurements();
-    //auto [angularVelocityX,angularVelocityY,angularVelocityZ] = IMUSensor.GetGyroMeasurements();
-    //IMUSensor.UpdateAccelerometerMeasurements();
-    //Serial.println(M_PI);
-    //IMUSensor.UpdateGyroMeasurements();
-    //IMUSensor.printAccValues();
-    //IMUSensor.printGyroValues();
-    //Serial.print(i);
-    //Serial.print(",");
-    //i++;
 
+    ICMSensor.UpdateMeasurements();
+    /*ICMSensor.printAccValues();
+    ICMSensor.printGyroValues();
+    ICMSensor.printMagnoValues();
+    Serial.println();*/
+    Serial.print("heading: ");
+    float heading = ICMSensor.getHeading();
+    Serial.println(heading);
 
-    Serial.println();
+    /*Serial.println();
     delay(100);
-
-    Magnetometer.UpdateMagnetometerMeasurements();
-    Magnetometer.printMagnetometorValues();
-
-    Serial.println();
-    delay(100);
-
     GNSSSensor.UpdateValues();
-    GNSSSensor.printGNSSValues();
+    GNSSSensor.printGNSSValues();*/
   }
 }

@@ -9,7 +9,6 @@
 class GNSSSensor {
 public:
   GNSSSensor();
-  SFE_UBLOX_GNSS myGNSS;
   void UpdateValues();
   long getLatitude();
   long getLongitude();
@@ -25,7 +24,7 @@ private:
   long longitude = 0;
   long altitude = 0;
   byte SIV=0;
-  
+  SFE_UBLOX_GNSS myGNSS;
   const int GNSSI2C = 0x42;
 };
 
