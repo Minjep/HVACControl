@@ -1,13 +1,13 @@
 #include <Arduino.h>
 #include <BasicLinearAlgebra.h>
-#include <Kalman.h>
+#include "Kalman.h"
 
 using namespace BLA;
 
 const int stateDim  = 8;
 const int inputDim = 3;
 const int outputDim = 3;
-
+int Ts=1000;
 Matrix<stateDim, stateDim> A = {1,0,Ts,0,0,0,0,0,
                                 0,1,0,Ts,0,0,0,0,
                                 0,0,1,0,Ts,0,0,0,
@@ -27,11 +27,11 @@ Matrix<stateDim, inputDim> B = {0,0,0,
 Matrix<outputDim, stateDim> C = {1,0,0,0,0,0,0,0,
                                 0,1,0,0,0,0,0,0,
                                 0,0,0,0,0,0,1,0};
-Matrix<stateDim, stateDim> Q = {0.0001, 0, 0, 0.0001};
-Matrix<outputDim, outputDim> R = {0.1, 0, 0, 0.1};
-Matrix<outputDim, stateDim> P = {1, 0, 0, 1};
-Matrix<stateDim, 1> initX = {0, 0};
-Matrix<stateDim, stateDim> initP = {1, 0, 0, 1};
+Matrix<stateDim, stateDim> Q;
+Matrix<outputDim, outputDim> R ;
+Matrix<outputDim, stateDim> P ;
+Matrix<stateDim, 1> initX;
+Matrix<stateDim, stateDim> initP;
 
 Kalman<stateDim, inputDim, outputDim> kf(A, C, Q, R, P);
 

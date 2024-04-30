@@ -1,11 +1,15 @@
 #ifndef GNSSSENSOR_H_
 #define GNSSSENSOR_H_
 
-#include <tuple>
+
+#include <SparkFun_u-blox_GNSS_v3.h> 
+
+
 
 class GNSSSensor {
 public:
   GNSSSensor();
+  SFE_UBLOX_GNSS myGNSS;
   void UpdateValues();
   long getLatitude();
   long getLongitude();
@@ -13,12 +17,16 @@ public:
   long getSIV();
   void printGNSSValues();
   void Initialize();
+  
+  
 
 private:
   long latitude = 0;
   long longitude = 0;
   long altitude = 0;
   byte SIV=0;
+  
+  const int GNSSI2C = 0x42;
 };
 
 #endif
