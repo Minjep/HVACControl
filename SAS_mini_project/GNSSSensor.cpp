@@ -1,7 +1,6 @@
 #include <Arduino.h>
-#include <SparkFun_u-blox_GNSS_Arduino_Library.h>
 #include "GNSSSensor.h"
-SFE_UBLOX_GNSS myGNSS;
+
 
 
 
@@ -51,10 +50,6 @@ void GNSSSensor::printGNSSValues() {
 }
 
 void GNSSSensor::Initialize() {
-  Wire.begin();
-
-  //myGNSS.enableDebugging(); // Uncomment this line to enable helpful debug messages on Serial
-
   if (myGNSS.begin() == false)  //Connect to the u-blox module using Wire port
   {
     Serial.println(F("u-blox GNSS not detected at default I2C address. Please check wiring. Freezing."));
@@ -63,6 +58,6 @@ void GNSSSensor::Initialize() {
   }
 
   myGNSS.setI2COutput(COM_TYPE_UBX);                  //Set the I2C port to output UBX only (turn off NMEA noise)
-  myGNSS.saveConfigSelective(VAL_CFG_SUBSEC_IOPORT);  //Save (only) the communications port settings to flash and BBR
+  //myGNSS.saveConfigSelective(VAL_CFG_SUBSEC_IOPORT);  //Save (only) the communications port settings to flash and BBR
   myGNSS.setNavigationFrequency(1);
 }
