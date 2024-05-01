@@ -16,15 +16,15 @@ void ICMSensor::UpdateMeasurements() {
     AccX = AccX / mg_to_m_per_s_sqaured;
     AccY = AccY / mg_to_m_per_s_sqaured;
     AccZ = AccZ / mg_to_m_per_s_sqaured;
-    GyroX = myICM.gyrX();          //[degrees/s]
-    GyroY = myICM.gyrY();          //[degrees/s]
-    GyroZ = myICM.gyrZ();          //[degrees/s]
-    GyroX = GyroX * M_PI / 180;    //[rad/s]
-    GyroY = GyroY * M_PI / 180;    //[rad/s]
-    GyroZ = GyroZ * M_PI / 180;    //[rad/s]
-    MagnoX = myICM.magX();         //[uT]
-    MagnoY = myICM.magY();         //[uT]
-    MagnoZ = myICM.magZ();         //[uT]
+    GyroX = myICM.gyrX();        //[degrees/s]
+    GyroY = myICM.gyrY();        //[degrees/s]
+    GyroZ = myICM.gyrZ();        //[degrees/s]
+    GyroX = GyroX * M_PI / 180;  //[rad/s]
+    GyroY = GyroY * M_PI / 180;  //[rad/s]
+    GyroZ = GyroZ * M_PI / 180;  //[rad/s]
+    MagnoX = myICM.magX();       //[uT]
+    MagnoY = myICM.magY();       //[uT]
+    MagnoZ = myICM.magZ();       //[uT]
     MagnoX = MagnoX - MagnoOffsetX;
     MagnoY = MagnoY - MagnoOffsetY;
     MagnoZ = MagnoZ - MagnoOffsetZ;
@@ -61,54 +61,15 @@ float ICMSensor::getHeading() {
 // Assign accelerometer data to variables
 
 std::tuple<float, float, float> ICMSensor::GetAccelerometerMeasurements() {
-  if (myICM.dataReady()) {
-    myICM.getAGMT();  // The values are only updated when you call 'getAGMT'
-    //    printRawAGMT( myICM.agmt );     // Uncomment this to see the raw values, taken directly from the agmt structure
-    AccX = myICM.accX();  //[mg]
-    AccY = myICM.accY();  //[mg]
-    AccZ = myICM.accZ();  // [mg]
-    AccX = AccX / mg_to_m_per_s_sqaured;
-    AccX = AccX / mg_to_m_per_s_sqaured;
-    AccX = AccX / mg_to_m_per_s_sqaured;
-    delay(30);
-  } else {
-    Serial.println("Waiting for data");
-    delay(500);
-  }
   return std::make_tuple(AccX, AccY, AccZ);
 }
 
 
 std::tuple<float, float, float> ICMSensor::GetGyroMeasurements() {
-  if (myICM.dataReady()) {
-    myICM.getAGMT();  // The values are only updated when you call 'getAGMT'
-    //    printRawAGMT( myICM.agmt );     // Uncomment this to see the raw values, taken directly from the agmt structure
-    GyroX = myICM.gyrX();        //[degrees/s]
-    GyroY = myICM.gyrY();        //[degrees/s]
-    GyroZ = myICM.gyrZ();        //[degrees/s]
-    GyroX = GyroX * M_PI / 180;  //[rad/s]
-    GyroY = GyroY * M_PI / 180;  //[rad/s]
-    GyroZ = GyroZ * M_PI / 180;  //[rad/s]
-    delay(30);
-  } else {
-    Serial.println("Waiting for data");
-    delay(500);
-  }
   return std::make_tuple(GyroX, GyroY, GyroZ);
 }
 
 std::tuple<float, float, float> ICMSensor::GetMagnoMeasurements() {
-  if (myICM.dataReady()) {
-    myICM.getAGMT();  // The values are only updated when you call 'getAGMT'
-    //    printRawAGMT( myICM.agmt );     // Uncomment this to see the raw values, taken directly from the agmt structure
-    MagnoX = myICM.magX();  //[uT]
-    MagnoY = myICM.magY();  //[uT]
-    MagnoZ = myICM.magZ();  //[uT]
-    delay(30);
-  } else {
-    Serial.println("Waiting for data");
-    delay(500);
-  }
   return std::make_tuple(MagnoX, MagnoY, MagnoZ);
 }
 

@@ -18,21 +18,17 @@ void GNSSSensor::UpdateValues() {
 }
 
 long GNSSSensor::getLatitude() {
-  latitude = myGNSS.getLatitude();
   return latitude;
 }
 
 long GNSSSensor::getLongitude() {
-  longitude = myGNSS.getLongitude();
   return longitude;
 }
 long GNSSSensor::getAltitude() {
-  altitude = myGNSS.getAltitude();
   return altitude;
 }
 
 long GNSSSensor::getSIV() {
-  SIV = myGNSS.getSIV();
   return SIV;
 }
 

@@ -1,5 +1,5 @@
-#ifndef IMUSENSOR_H_
-#define IMUSENSOR_H_
+#ifndef ICMSENSOR_H_
+#define ICMSENSOR_H_
 
 #include <tuple>
 #include "ICM_20948.h"
@@ -35,7 +35,7 @@ private:
   float normMagnoY{0.f};
   float normMagnoZ{0.f};
   const float MagnoOffsetX = -40.586;
-  const float MagnoOffsetY = -9.464;
+  const float MagnoOffsetY = -14.464;
   const float MagnoOffsetZ = 25.201;
   const float decalination_angle = 4.20;
 };
