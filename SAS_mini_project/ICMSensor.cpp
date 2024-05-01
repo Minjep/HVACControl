@@ -16,15 +16,18 @@ void ICMSensor::UpdateMeasurements() {
     AccX = AccX / mg_to_m_per_s_sqaured;
     AccY = AccY / mg_to_m_per_s_sqaured;
     AccZ = AccZ / mg_to_m_per_s_sqaured;
-    GyroX = myICM.gyrX();        //[degrees/s]
-    GyroY = myICM.gyrY();        //[degrees/s]
-    GyroZ = myICM.gyrZ();        //[degrees/s]
-    GyroX = GyroX * M_PI / 180;  //[rad/s]
-    GyroY = GyroY * M_PI / 180;  //[rad/s]
-    GyroZ = GyroZ * M_PI / 180;  //[rad/s]
-    MagnoX = myICM.magX();       //[uT]
-    MagnoY = myICM.magY();       //[uT]
-    MagnoZ = myICM.magZ();       //[uT]
+    GyroX = myICM.gyrX();          //[degrees/s]
+    GyroY = myICM.gyrY();          //[degrees/s]
+    GyroZ = myICM.gyrZ();          //[degrees/s]
+    GyroX = GyroX * M_PI / 180;    //[rad/s]
+    GyroY = GyroY * M_PI / 180;    //[rad/s]
+    GyroZ = GyroZ * M_PI / 180;    //[rad/s]
+    MagnoX = myICM.magX();         //[uT]
+    MagnoY = myICM.magY();         //[uT]
+    MagnoZ = myICM.magZ();         //[uT]
+    MagnoX = MagnoX - MagnoOffsetX;
+    MagnoY = MagnoY - MagnoOffsetY;
+    MagnoZ = MagnoZ - MagnoOffsetZ;
     delay(30);
   } else {
     Serial.println("Waiting for data");
@@ -33,13 +36,25 @@ void ICMSensor::UpdateMeasurements() {
 }
 
 float ICMSensor::getHeading() {
-  heading = atan2(AccX, 0 - AccY);
+  // Calculate total magnetic field strength (magnitude)
+  float magnitude = sqrt(MagnoX * MagnoX + MagnoY * MagnoY);
 
-  // atan2 returns a value between +PI and -PI
-  // Convert to degrees
-  heading /= PI;
-  heading *= 180;
-  heading += 180;
+  // Normalize magnetic field measurements
+  normMagnoX = MagnoX / magnitude;
+  normMagnoY = MagnoY / magnitude;
+
+  // Calculate heading angle (in degrees)
+  float heading = atan2(normMagnoY, normMagnoX) * 180.0 / M_PI;
+
+  // Adjust for declination angle
+  heading += decalination_angle;
+
+  // Ensure heading angle is within [0, 360) range
+  if (heading < 0) {
+    heading += 360.0;
+  } else if (heading >= 360.0) {
+    heading -= 360.0;
+  }
   return heading;
 }
 

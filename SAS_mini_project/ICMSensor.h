@@ -31,6 +31,13 @@ private:
   float MagnoY{ 0.f };
   float MagnoZ{ 0.f };
   float heading{ 0.f };
+  float normMagnoX{0.f};
+  float normMagnoY{0.f};
+  float normMagnoZ{0.f};
+  const float MagnoOffsetX = -40.586;
+  const float MagnoOffsetY = -9.464;
+  const float MagnoOffsetZ = 25.201;
+  const float decalination_angle = 4.20;
 };
 
 #endif

@@ -9,8 +9,10 @@ GNSSSensor::GNSSSensor() {
 }
 
 void GNSSSensor::UpdateValues() {
-  latitude = myGNSS.getLatitude();
-  longitude = myGNSS.getLongitude();
+  rawLatitude = myGNSS.getLatitude();
+  rawLongitude = myGNSS.getLongitude();
+  latitude = rawLatitude * CONVERT_RAW_GNSS_DATA;
+  longitude = rawLongitude * CONVERT_RAW_GNSS_DATA;
   altitude = myGNSS.getAltitude();
   SIV = myGNSS.getSIV();
 }
@@ -60,4 +62,14 @@ void GNSSSensor::Initialize() {
   myGNSS.setI2COutput(COM_TYPE_UBX);                  //Set the I2C port to output UBX only (turn off NMEA noise)
   myGNSS.saveConfigSelective(VAL_CFG_SUBSEC_IOPORT);  //Save (only) the communications port settings to flash and BBR
   myGNSS.setNavigationFrequency(1);
+}
+
+std::pair<double, double> GNSSSensor::convertLatLonToMeters() {
+  // Latitude conversion: straightforward multiplication
+  latMeters = latitude * METERS_PER_DEGREE_LAT;
+
+  // Longitude conversion: depends on latitude
+  lonMeters = longitude * METERS_PER_DEGREE_LAT * cos(latitude * DEG_TO_RAD);
+
+  return { latMeters, lonMeters };
 }

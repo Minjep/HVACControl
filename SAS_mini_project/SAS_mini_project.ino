@@ -41,21 +41,21 @@ void setup() {
 
 long lastTime = 0;
 void loop() {
-  if (millis() - lastTime > 100) {
+  if (millis() - lastTime > 3000) {
     lastTime = millis();
 
-    ICMSensor.UpdateMeasurements();
+    //ICMSensor.UpdateMeasurements();
     /*ICMSensor.printAccValues();
     ICMSensor.printGyroValues();
     ICMSensor.printMagnoValues();
     Serial.println();*/
-    Serial.print("heading: ");
-    float heading = ICMSensor.getHeading();
-    Serial.println(heading);
+    //Serial.print("heading: ");
+    //float heading = ICMSensor.getHeading();
+    //Serial.println(heading);
 
-    /*Serial.println();
+    Serial.println();
     delay(100);
     GNSSSensor.UpdateValues();
-    GNSSSensor.printGNSSValues();*/
+    GNSSSensor.printGNSSValues();
   }
 }
