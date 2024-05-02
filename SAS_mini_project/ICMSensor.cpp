@@ -111,10 +111,18 @@ void ICMSensor::printMagnoValues() {
 
 void ICMSensor::Initialize() {
   myICM.begin(Wire, 1);
+  delay(100);
   Serial.print(F("Initialization of the sensor returned: "));
   Serial.println(myICM.statusString());
-  if (myICM.status != ICM_20948_Stat_Ok) {
+  while (myICM.status != ICM_20948_Stat_Ok) {
     Serial.println("Trying again...");
     delay(500);
+    myICM.begin(Wire, 1);
+    Serial.print(F("Initialization of the sensor returned: "));
+   delay(500);
+
+    Serial.println(myICM.statusString());
+
+
   }
 }
