@@ -7,6 +7,26 @@ mean1 = mean(data(:,1));
 mean2 = mean(data(:,2));
 mean3 = mean(data(:,3));
 
+heading  = zeros (length(data(:,1)),1);
+magnitude=0;
+for i=1:length(data(:,1))
+    magnitude = sqrt(data(i,1)^2 + sqrt(data(i,2)^2));
+    xnorm = data(i,1)/magnitude;
+    ynorm = data(i,2)/magnitude;
+    heading(i) = atan(ynorm/xnorm);
+end
+heading = heading *180/pi;
+var(heading)
+plot(heading)
+xlabel('sample')
+ylabel('heading [grader]')
+title('Udregnet heading pr måling')
+xlim([0 1632])
+yline(mean(heading),'linewidth',2);
+
+
+%%
+
 var(data(:,1))
 var(data(:,2))
 var(data(:,3))
