@@ -47,6 +47,8 @@ disp('LQR Gain Matrix K:');
 disp(K);
 
 % Check stability
+figure('Renderer', 'painters', 'Position', [10 10 1600 800])
+
 sys_closed=ss(designSys.A - designSys.B*K, designSys.B, designSys.C, designSys.D, designSys.Ts);
 figure;
 pzmap(sys_closed);
@@ -55,6 +57,7 @@ xlabel('Real Part');
 ylabel('Imaginary Part');
 grid on;
 axis equal;
+saveas(gcf, 'Eigenvalues of A_BK.png')
 
 
 % simulating the system
