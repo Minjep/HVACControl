@@ -120,13 +120,13 @@ def get_Q_index(states, num_states_2, num_states_3,num_states_4,actions,num_acti
     return Q_index
 
  
-def update_Q(Q, state_index, action_index, reward, next_state, discount_factor, learning_rate):
+def update_Q(Q, Q_index, reward, next_state, discount_factor, learning_rate):
     # Q-learning update rule
     reward = sum(reward)
     best_next_action = np.argmax(Q[next_state])
     td_target = reward + discount_factor * Q[next_state][best_next_action]
-    td_error = td_target - Q[state_index][action_index]
-    Q[state_index][action_index] += learning_rate * td_error
+    td_error = td_target - Q[Q_index[0]][Q_index[1]]
+    Q[Q_index[0]][Q_index[1]] += learning_rate * td_error
     
 
     
