@@ -7,6 +7,16 @@ import random
 from AirmasterDataLib.process.filter_data import  loadPklFile
 
 def reward_function(temperature_room,CO2_room):
+    """
+    Calculate rewards based on deviation of room temperature and CO2 level from their desired thresholds.
+    
+    Parameters:
+        temperature_room (float): The current temperature in the room.
+        CO2_room (float): The current CO2 concentration in the room.
+
+    Returns:
+        list: Contains two float values representing the reward for temperature and CO2 level.
+    """
     
     temperature_variance = 0.272 #baseret på airmaster data
     CO2_variance = 151.375 #baseret på airmaster data
@@ -26,6 +36,16 @@ def reward_function(temperature_room,CO2_room):
     
 
 def initialize_variables(num_states, num_actions):
+    """
+    Initialize the Q-table and state-action mappings.
+    
+    Parameters:
+        num_states (int): Total number of states in the Q-table.
+        num_actions (int): Total number of actions in the Q-table.
+    
+    Returns:
+        tuple: A tuple containing the initialized Q-table (numpy array), states dictionary, and actions dictionary.
+    """
     states = {'temperature_room': 0,  'co2_room': 0,  'temperature_outside' : 0 ,'time_of_day': 0}
     actions = {'req_inlet_temperature': 0,  'req_inlet_flow': 0,  'recirc_damper_pos': 0}
     return np.zeros((num_states, num_actions)),states,actions
@@ -33,6 +53,15 @@ def initialize_variables(num_states, num_actions):
     
 
 def convert_actions_to_values(actions):
+    """
+    Convert action indices to real-world values based on predefined scales.
+    
+    Parameters:
+        actions (dict): Dictionary of action indices.
+    
+    Returns:
+        dict: Dictionary of action values calculated from the indices.
+    """
     action_values = {'req_inlet_temperature_values': 0,  'req_inlet_flow_values': 0,  'recirc_damper_pos_values': 0}
     
     action_values['req_inlet_temperature_values'] = actions['req_inlet_temperature']*0.5+16
@@ -42,6 +71,15 @@ def convert_actions_to_values(actions):
     return action_values
 
 def convert_values_to_states(values):
+    """
+    Map continuous or real-world value ranges into discrete state indices.
+    
+    Parameters:
+        values (dict): Dictionary of real-world values.
+    
+    Returns:
+        dict: Dictionary of state indices.
+    """
     states = {'temperature_room': 0,  'co2_room': 0,'temperature_outside':0 , 'time_of_day': 0}
     
     
@@ -107,6 +145,21 @@ def convert_values_to_states(values):
 
     
 def get_Q_index(states, num_states_2, num_states_3,num_states_4,actions,num_action_2,num_action_3):
+    """
+    Compute the indices in the Q-table for given states and actions.
+    
+    Parameters:
+        states (dict): Dictionary containing current states.
+        num_states_2 (int): Total number of secondary states.
+        num_states_3 (int): Total number of tertiary states.
+        num_states_4 (int): Total number of quaternary states.
+        actions (dict): Dictionary containing current actions.
+        num_action_2 (int): Total number of secondary actions.
+        num_action_3 (int): Total number of tertiary actions.
+
+    Returns:
+        list: Indices in the Q-table for the current state and action.
+    """
     state_index = (states['temperature_room'] ) * (num_states_2 * num_states_3 * num_states_4) + \
             (states['co2_room'] ) * (num_states_4 * num_states_3) + \
             (states['temperature_outside'] ) * num_states_4 + \
@@ -121,6 +174,18 @@ def get_Q_index(states, num_states_2, num_states_3,num_states_4,actions,num_acti
 
  
 def update_Q(Q, state_index, action_index, reward, next_state, discount_factor, learning_rate):
+    """
+    Update the Q-value based on the reward received and the highest Q-value of the next state.
+    
+    Parameters:
+        Q (numpy.ndarray): The Q-table.
+        state_index (int): Index for the current state.
+        action_index (int): Index for the current action.
+        reward (float): Reward received.
+        next_state (int): Index for the next state.
+        discount_factor (float): Discount factor for future rewards.
+        learning_rate (float): Learning rate.
+    """
     # Q-learning update rule
     reward = sum(reward)
     best_next_action = np.argmax(Q[next_state])
@@ -129,6 +194,18 @@ def update_Q(Q, state_index, action_index, reward, next_state, discount_factor, 
     Q[state_index][action_index] += learning_rate * td_error
     
 def get_Q_row(states, num_states_2, num_states_3,num_states_4):
+    """
+    Retrieve the row index in the Q-table for the given states.
+    
+    Parameters:
+        states (dict): Current state information.
+        num_states_2 (int): Total number of secondary states.
+        num_states_3 (int): Total number of tertiary states.
+        num_states_4 (int): Total number of quaternary states.
+    
+    Returns:
+        int: Index of the Q-table row corresponding to the given states.
+    """
     state_index = (states['temperature_room'] ) * (num_states_2 * num_states_3 * num_states_4) + \
             (states['co2_room'] ) * (num_states_4 * num_states_3) + \
             (states['temperature_outside'] ) * num_states_4 + \
@@ -138,6 +215,21 @@ def get_Q_row(states, num_states_2, num_states_3,num_states_4):
     return Q_row
 
 def choose_Action(Q_matrix,epsilon,states, num_states_2, num_states_3,num_states_4,number_of_actions):
+    """
+    Choose an action based on the epsilon-greedy strategy.
+    
+    Parameters:
+        Q_matrix (numpy.ndarray): The Q-table.
+        epsilon (float): Probability threshold for choosing a random action.
+        states (dict): Current state information.
+        num_states_2 (int): Total number of secondary states.
+        num_states_3 (int): Total number of tertiary states.
+        num_states_4 (int): Total number of quaternary states.
+        number_of_actions (int): Total number of actions available.
+    
+    Returns:
+        int: The chosen action index.
+    """
     random_number = random.random()
     print(random_number)
 
@@ -149,6 +241,19 @@ def choose_Action(Q_matrix,epsilon,states, num_states_2, num_states_3,num_states
         return find_optimal_action(Q_matrix,states, num_states_2, num_states_3,num_states_4)
 
 def find_optimal_action(Q_matrix,states, num_states_2, num_states_3,num_states_4):
+    """
+    Identify the optimal action for the current state based on the Q-values.
+    
+    Parameters:
+        Q_matrix (numpy.ndarray): The Q-table.
+        states (dict): Current state information.
+        num_states_2 (int): Total number of secondary states.
+        num_states_3 (int): Total number of tertiary states.
+        num_states_4 (int): Total number of quaternary states.
+    
+    Returns:
+        int: The index of the optimal action.
+    """
     Q_row=get_Q_row(states, num_states_2, num_states_3,num_states_4)
 
     # Access the row in the Q-matrix.
@@ -160,6 +265,15 @@ def find_optimal_action(Q_matrix,states, num_states_2, num_states_3,num_states_4
     return max_action_index
 
 def find_random_action(number_of_actions):
+    """
+    Select a random action index.
+    
+    Parameters:
+        number_of_actions (int): Total number of actions available.
+    
+    Returns:
+        int: Randomly selected action index.
+    """
     random_integer = random.randint(0, number_of_actions-1)
     return random_integer
     
