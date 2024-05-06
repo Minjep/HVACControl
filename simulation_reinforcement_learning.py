@@ -119,7 +119,16 @@ def get_Q_index(states, num_states_2, num_states_3,num_states_4,actions,num_acti
     Q_index = [state_index,action_index]
     return Q_index
 
+ 
+def update_Q(Q, state_index, action_index, reward, next_state, discount_factor, learning_rate):
+    # Q-learning update rule
+    reward = sum(reward)
+    best_next_action = np.argmax(Q[next_state])
+    td_target = reward + discount_factor * Q[next_state][best_next_action]
+    td_error = td_target - Q[state_index][action_index]
+    Q[state_index][action_index] += learning_rate * td_error
     
+
     
     
 def main():
@@ -136,9 +145,17 @@ def main():
     number_of_actions = num_req_inlet_temp_actions*num_req_inlet_flow_actions*num_recirc_damp_actions 
     
     
-    Q,states,actions = initialize_variables(number_of_states,number_of_actions)
+    Q_table,states,actions = initialize_variables(number_of_states,number_of_actions)
+    
+    for i in range(Q_table.shape[0]):
+        Q_table[i,:] = i
+        
+    for i in range(Q_table.shape[1]):
+        Q_table[:,i] = Q_table[:,i]+i 
     
     for key in actions.keys(): actions[key] = 1
+    
+    update_Q(Q_table,1,1,1,1,1,1)
     
     action_values = convert_actions_to_values(actions)
     
@@ -146,7 +163,7 @@ def main():
     
 
 
-    reward_function(states)
+    reward_function(1,21)
    
     
    
