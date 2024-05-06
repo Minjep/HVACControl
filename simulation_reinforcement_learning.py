@@ -6,16 +6,16 @@ from datetime import datetime, timedelta
 
 from AirmasterDataLib.process.filter_data import  loadPklFile
 
-def reward_function(states):
+def reward_function(temperature_room,CO2_room):
     
     temperature_variance = 0.272 #baseret på airmaster data
     CO2_variance = 151.375 #baseret på airmaster data
     requested_room_temperature = 23 
     CO2_average_concentration_outside = 400  
     
-    temperature_reward = -((states[0]-requested_room_temperature)/temperature_variance)**2
+    temperature_reward = -((temperature_room-requested_room_temperature)/temperature_variance)**2
     
-    CO2_adjusted = max(CO2_average_concentration_outside,(states[1]))
+    CO2_adjusted = max(CO2_average_concentration_outside,(CO2_room))
     CO2_reward = -((CO2_adjusted-CO2_average_concentration_outside)/CO2_variance)**2
     
     rewards = [temperature_reward,CO2_reward]
@@ -32,8 +32,14 @@ def initialize_variables(num_states, num_actions):
    
     
 
-def convert_states_to_values(states):
-    return
+def convert_actions_to_values(actions):
+    action_values = {'req_inlet_temperature_values': 0,  'req_inlet_flow_values': 0,  'recirc_damper_pos_values': 0}
+    
+    action_values['req_inlet_temperature_values'] = actions['req_inlet_temperature']*0.5+16
+    action_values['req_inlet_flow_values'] = actions['req_inlet_flow']*10+30
+    action_values['recirc_damper_pos_values'] = actions['recirc_damper_pos']*100
+    
+    return action_values
 
 def convert_values_to_states(values):
     states = {'temperature_room': 0,  'co2_room': 0,'temperature_outside':0 , 'time_of_day': 0}
@@ -124,7 +130,7 @@ def main():
    
     number_of_states = num_temp_room_states*num_co2_room_states*num_time_of_day_states*num_temp_outside_states
     
-    num_req_inlet_temp_actions = 28
+    num_req_inlet_temp_actions = 29
     num_req_inlet_flow_actions = 8
     num_recirc_damp_actions = 2
     number_of_actions = num_req_inlet_temp_actions*num_req_inlet_flow_actions*num_recirc_damp_actions 
@@ -132,12 +138,10 @@ def main():
     
     Q,states,actions = initialize_variables(number_of_states,number_of_actions)
     
+    for key in actions.keys(): actions[key] = 1
     
-    state_values = {'temperature_room_value': 0,  'co2_room_value': 390, 'temperature_outside_value': 0 ,'time_of_day_values': "05:30:00"}
-    states = convert_values_to_states(state_values)
-    print("State:", states)
-
-    Q_index = get_Q_index(states, num_co2_room_states, num_temp_outside_states,num_time_of_day_states,actions,num_req_inlet_flow_actions,num_recirc_damp_actions)
+    action_values = convert_actions_to_values(actions)
+    
 
     
 
