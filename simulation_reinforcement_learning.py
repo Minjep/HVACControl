@@ -120,15 +120,48 @@ def get_Q_index(states, num_states_2, num_states_3,num_states_4,actions,num_acti
     return Q_index
 
  
-def update_Q(Q, Q_index, reward, next_state, discount_factor, learning_rate):
+def update_Q(Q, state_index, action_index, reward, next_state, discount_factor, learning_rate):
     # Q-learning update rule
     reward = sum(reward)
     best_next_action = np.argmax(Q[next_state])
     td_target = reward + discount_factor * Q[next_state][best_next_action]
-    td_error = td_target - Q[Q_index[0]][Q_index[1]]
-    Q[Q_index[0]][Q_index[1]] += learning_rate * td_error
+    td_error = td_target - Q[state_index][action_index]
+    Q[state_index][action_index] += learning_rate * td_error
     
+def get_Q_row(states, num_states_2, num_states_3,num_states_4):
+    state_index = (states['temperature_room'] ) * (num_states_2 * num_states_3 * num_states_4) + \
+            (states['co2_room'] ) * (num_states_4 * num_states_3) + \
+            (states['temperature_outside'] ) * num_states_4 + \
+             (states['time_of_day'])   
 
+    Q_row = state_index
+    return Q_row
+
+def choose_Action(Q_matrix,epsilon,states, num_states_2, num_states_3,num_states_4,number_of_actions):
+    random_number = random.random()
+    print(random_number)
+
+    if (random_number<epsilon):
+        print("choosing random action")
+        return find_random_action(number_of_actions)
+    else: 
+        print("choosing optimal action")
+        return find_optimal_action(Q_matrix,states, num_states_2, num_states_3,num_states_4)
+
+def find_optimal_action(Q_matrix,states, num_states_2, num_states_3,num_states_4):
+    Q_row=get_Q_row(states, num_states_2, num_states_3,num_states_4)
+
+    # Access the row in the Q-matrix.
+    row_values = Q_matrix[Q_row]
+
+    # Find the index of the maximum entry in this row.
+    max_action_index = row_values.index(max(row_values))
+
+    return max_action_index
+
+def find_random_action(number_of_actions):
+    random_integer = random.randint(0, number_of_actions-1)
+    return random_integer
     
     
 def main():
@@ -173,5 +206,22 @@ def main():
    
 
 if __name__ == "__main__":
+    num_temp_room_states = 20
+    num_co2_room_states = 14
+    num_temp_outside_states = 27
+    num_time_of_day_states = 12
+   
+    number_of_states = num_temp_room_states*num_co2_room_states*num_time_of_day_states*num_temp_outside_states
     
-    main()
+    num_req_inlet_temp_actions = 21
+    num_req_inlet_flow_actions = 8
+    num_recirc_damp_actions = 2
+    number_of_actions = num_req_inlet_temp_actions*num_req_inlet_flow_actions*num_recirc_damp_actions #21 requested inlet temperature, 8 requested inlet flow, 2 recirc damper position
+    Q,states,actions = initialize_variables(number_of_states,number_of_actions)
+
+    state_values = {'temperature_room_value': 0,  'co2_room_value': 390,  'time_of_day_values': "05:30:00"}
+    states = convert_values_to_states(state_values)
+    print("State:", states)
+    
+    choose_Action(Q,1,states, num_co2_room_states, num_temp_room_states,num_temp_outside_states,number_of_actions)
+    print("done")
