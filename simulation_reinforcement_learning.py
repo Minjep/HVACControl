@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 import random
 from AirmasterDataLib.process.filter_data import  loadPklFile
 
-def reward_function(temperature_room,CO2_room):
+def reward_function(temperature_room:float,CO2_room:float):
     """
     Calculate rewards based on deviation of room temperature and CO2 level from their desired thresholds.
     
@@ -35,7 +35,7 @@ def reward_function(temperature_room,CO2_room):
 
     
 
-def initialize_variables(num_states, num_actions):
+def initialize_variables(num_states:int, num_actions:int):
     """
     Initialize the Q-table and state-action mappings.
     
@@ -52,7 +52,7 @@ def initialize_variables(num_states, num_actions):
    
     
 
-def convert_actions_to_values(actions):
+def convert_actions_to_values(actions:dict):
     """
     Convert action indices to real-world values based on predefined scales.
     
@@ -70,7 +70,7 @@ def convert_actions_to_values(actions):
     
     return action_values
 
-def convert_values_to_states(values):
+def convert_values_to_states(values:dict):
     """
     Map continuous or real-world value ranges into discrete state indices.
     
@@ -144,7 +144,7 @@ def convert_values_to_states(values):
     return states
 
     
-def get_Q_index(states, num_states_2, num_states_3,num_states_4,actions,num_action_2,num_action_3):
+def get_Q_index(states:dict, num_states_2:int, num_states_3:int,num_states_4:int,actions:dict,num_action_2:int,num_action_3:int):
     """
     Compute the indices in the Q-table for given states and actions.
     
@@ -173,7 +173,7 @@ def get_Q_index(states, num_states_2, num_states_3,num_states_4,actions,num_acti
     return Q_index
 
  
-def update_Q(Q, state_index, action_index, reward, next_state, discount_factor, learning_rate):
+def update_Q(Q:np.array, state_index:int, action_index:int, reward:float, next_state:int, discount_factor:float, learning_rate:float):
     """
     Update the Q-value based on the reward received and the highest Q-value of the next state.
     
@@ -193,7 +193,7 @@ def update_Q(Q, state_index, action_index, reward, next_state, discount_factor, 
     td_error = td_target - Q[state_index][action_index]
     Q[state_index][action_index] += learning_rate * td_error
     
-def get_Q_row(states, num_states_2, num_states_3,num_states_4):
+def get_Q_row(states:dict, num_states_2:int, num_states_3:int,num_states_4:int):
     """
     Retrieve the row index in the Q-table for the given states.
     
@@ -214,7 +214,7 @@ def get_Q_row(states, num_states_2, num_states_3,num_states_4):
     Q_row = state_index
     return Q_row
 
-def choose_Action(Q_matrix,epsilon,states, num_states_2, num_states_3,num_states_4,number_of_actions):
+def choose_Action(Q_matrix:np.array,epsilon:float,states:dict, num_states_2:int, num_states_3:int,num_states_4:int,number_of_actions:int):
     """
     Choose an action based on the epsilon-greedy strategy.
     
@@ -240,7 +240,7 @@ def choose_Action(Q_matrix,epsilon,states, num_states_2, num_states_3,num_states
         print("choosing optimal action")
         return find_optimal_action(Q_matrix,states, num_states_2, num_states_3,num_states_4)
 
-def find_optimal_action(Q_matrix,states, num_states_2, num_states_3,num_states_4):
+def find_optimal_action(Q_matrix:np.array,states:dict, num_states_2:int, num_states_3:int,num_states_4:int):
     """
     Identify the optimal action for the current state based on the Q-values.
     
@@ -264,7 +264,7 @@ def find_optimal_action(Q_matrix,states, num_states_2, num_states_3,num_states_4
 
     return max_action_index
 
-def find_random_action(number_of_actions):
+def find_random_action(number_of_actions:int):
     """
     Select a random action index.
     
