@@ -155,7 +155,7 @@ def find_optimal_action(Q_matrix,states, num_states_2, num_states_3,num_states_4
     row_values = Q_matrix[Q_row]
 
     # Find the index of the maximum entry in this row.
-    max_action_index = row_values.index(max(row_values))
+    max_action_index = np.argmax(row_values)
 
     return max_action_index
 
@@ -222,6 +222,12 @@ if __name__ == "__main__":
     state_values = {'temperature_room_value': 0,  'co2_room_value': 390,  'time_of_day_values': "05:30:00",'temperature_outside_value':-100}
     states = convert_values_to_states(state_values)
     print("State:", states)
+
+    for i in range(Q.shape[0]):
+        Q[i,:] = i
+        
+    for i in range(Q.shape[1]):
+        Q[:,i] = Q[:,i]+i 
     
-    choose_Action(Q,1,states, num_co2_room_states, num_temp_room_states,num_temp_outside_states,number_of_actions)
+    action=choose_Action(Q,0,states, num_co2_room_states, num_temp_room_states,num_temp_outside_states,number_of_actions)
     print("done")
