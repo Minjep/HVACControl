@@ -219,7 +219,7 @@ if __name__ == "__main__":
     number_of_actions = num_req_inlet_temp_actions*num_req_inlet_flow_actions*num_recirc_damp_actions #21 requested inlet temperature, 8 requested inlet flow, 2 recirc damper position
     Q,states,actions = initialize_variables(number_of_states,number_of_actions)
 
-    state_values = {'temperature_room_value': 0,  'co2_room_value': 390,  'time_of_day_values': "05:30:00"}
+    state_values = {'temperature_room_value': 0,  'co2_room_value': 390,  'time_of_day_values': "05:30:00",'temperature_outside_value':-100}
     states = convert_values_to_states(state_values)
     print("State:", states)
     
