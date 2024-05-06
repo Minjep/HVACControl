@@ -26,7 +26,7 @@ def reward_function(states):
     
 
 def initialize_variables(num_states, num_actions):
-    states = {'temperature_room': 0,  'co2_room': 0,  'time_of_day': 0}
+    states = {'temperature_room': 0,  'co2_room': 0,  'temperature_outside' : 0 ,'time_of_day': 0}
     actions = {'req_inlet_temperature': 0,  'req_inlet_flow': 0,  'recirc_damper_pos': 0}
     return np.zeros((num_states, num_actions)),states,actions
    
@@ -36,8 +36,10 @@ def convert_states_to_values(states):
     return
 
 def convert_values_to_states(values):
-    states = {'temperature_room': 0,  'co2_room': 0,  'time_of_day': 0}
+    states = {'temperature_room': 0,  'co2_room': 0,'temperature_outside':0 , 'time_of_day': 0}
     
+    
+    #Get temp room states
     intervals = [
         (float('-inf'), 21.5),
         (21.5, 21.8),
@@ -66,12 +68,23 @@ def convert_values_to_states(values):
              states['temperature_room'] = i
     
     #Get co2 room state
-    if values['co2_room_value'] < 400:
+    co2_room_min = 400
+    co2_room_max = 1000
+    co2_room_stepsize = 50
+    if values['co2_room_value'] < co2_room_min:
         states['co2_room'] = 0  # Below the minimum value
-    elif values['co2_room_value'] >= 1000:
-        states['co2_room'] = (1000 - 400) // 50 + 1  # Above the maximum value
+    elif values['co2_room_value'] >= co2_room_max:
+        states['co2_room'] = (co2_room_max - co2_room_min) // co2_room_stepsize + 1  # Above the maximum value
     else:
-        states['co2_room'] = (values['co2_room_value'] - 400) // 50 + 1
+        states['co2_room'] = (values['co2_room_value'] - co2_room_min) // co2_room_stepsize + 1
+        
+    #get temp air outside state
+    if values['temperature_outside_value'] < -20:
+        states['temperature_outside'] = 0  # Below the minimum value
+    elif values['temperature_outside_value'] >= 30:
+        states['temperature_outside'] = (30 - (-20)) // 2 + 1  # Above the maximum value
+    else:
+        states['temperature_outside'] = (values['temperature_outside_value'] - (-20)) // 2 + 1
 
 
     #Get time of day state
@@ -87,10 +100,11 @@ def convert_values_to_states(values):
     return states
 
     
-def get_Q_index(states, num_states_2, num_states_3,actions,num_action_2,num_action_3):
-    state_index = (states['temperature_room'] ) * (num_states_2 * num_states_3) + \
-            (states['co2_room'] ) * num_states_3 + \
-            (states['time_of_day'] )
+def get_Q_index(states, num_states_2, num_states_3,num_states_4,actions,num_action_2,num_action_3):
+    state_index = (states['temperature_room'] ) * (num_states_2 * num_states_3 * num_states_4) + \
+            (states['co2_room'] ) * (num_states_4 * num_states_3) + \
+            (states['temperature_outside'] ) * num_states_4 + \
+             (states['time_of_day'])   
             
     action_index = (actions['req_inlet_temperature'] ) * (num_action_2 * num_action_3) + \
             (actions['req_inlet_flow'] ) * num_action_3 + \
@@ -105,23 +119,25 @@ def get_Q_index(states, num_states_2, num_states_3,actions,num_action_2,num_acti
 def main():
     num_temp_room_states = 20
     num_co2_room_states = 14
+    num_temp_outside_states = 27
     num_time_of_day_states = 12
+   
+    number_of_states = num_temp_room_states*num_co2_room_states*num_time_of_day_states*num_temp_outside_states
     
-    #(27 t_ao, men denne bliver state til en specifik i start, 12 co2_ao men kan ikke bestemmes i Airmaster simulering)
-    number_of_states = num_temp_room_states*num_co2_room_states*num_time_of_day_states
-    
-    num_req_inlet_temp_actions = 21
+    num_req_inlet_temp_actions = 28
     num_req_inlet_flow_actions = 8
     num_recirc_damp_actions = 2
-    number_of_actions = num_req_inlet_temp_actions*num_req_inlet_flow_actions*num_recirc_damp_actions #21 requested inlet temperature, 8 requested inlet flow, 2 recirc damper position
+    number_of_actions = num_req_inlet_temp_actions*num_req_inlet_flow_actions*num_recirc_damp_actions 
+    
+    
     Q,states,actions = initialize_variables(number_of_states,number_of_actions)
     
     
-    state_values = {'temperature_room_value': 0,  'co2_room_value': 390,  'time_of_day_values': "05:30:00"}
+    state_values = {'temperature_room_value': 0,  'co2_room_value': 390, 'temperature_outside_value': 0 ,'time_of_day_values': "05:30:00"}
     states = convert_values_to_states(state_values)
     print("State:", states)
 
-    Q_index = get_Q_index(states, num_co2_room_states, num_time_of_day_states,actions,num_req_inlet_flow_actions,num_recirc_damp_actions)
+    Q_index = get_Q_index(states, num_co2_room_states, num_temp_outside_states,num_time_of_day_states,actions,num_req_inlet_flow_actions,num_recirc_damp_actions)
 
     
 
