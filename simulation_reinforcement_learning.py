@@ -3,7 +3,7 @@ import seaborn as sns
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
-
+import random
 from AirmasterDataLib.process.filter_data import  loadPklFile
 
 def reward_function(temperature_room,CO2_room):
@@ -139,7 +139,7 @@ def main():
    
     number_of_states = num_temp_room_states*num_co2_room_states*num_time_of_day_states*num_temp_outside_states
     
-    num_req_inlet_temp_actions = 29
+    num_req_inlet_temp_actions = 21
     num_req_inlet_flow_actions = 8
     num_recirc_damp_actions = 2
     number_of_actions = num_req_inlet_temp_actions*num_req_inlet_flow_actions*num_recirc_damp_actions 
@@ -157,13 +157,17 @@ def main():
     
     update_Q(Q_table,1,1,1,1,1,1)
     
-    action_values = convert_actions_to_values(actions)
-    
+    state_values = {'temperature_room_value': 0,  'co2_room_value': 390,  'time_of_day_values': "05:30:00"}
+    states = convert_values_to_states(state_values)
+    print("State:", states)
+
+    Q_index = get_Q_index(states, num_co2_room_states, num_time_of_day_states,actions,num_req_inlet_flow_actions,num_recirc_damp_actions)
 
     
 
 
     reward_function(1,21)
+    print("done")
    
     
    
