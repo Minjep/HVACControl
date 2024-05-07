@@ -173,7 +173,7 @@ def get_Q_index(states:dict, num_states_2:int, num_states_3:int,num_states_4:int
     return Q_index
 
  
-def update_Q(Q:np.array, state_index:int, action_index:int, reward:float, next_state:int, discount_factor:float, learning_rate:float):
+def update_Q(Q:np.array, state_index:int, action_index:int, rewards:np.array, next_state:int, discount_factor:float, learning_rate:float):
     """
     Update the Q-value based on the reward received and the highest Q-value of the next state.
     
@@ -181,17 +181,18 @@ def update_Q(Q:np.array, state_index:int, action_index:int, reward:float, next_s
         Q (numpy.ndarray): The Q-table.
         state_index (int): Index for the current state.
         action_index (int): Index for the current action.
-        reward (float): Reward received.
+        reward (np.array): Reward received.
         next_state (int): Index for the next state.
         discount_factor (float): Discount factor for future rewards.
         learning_rate (float): Learning rate.
     """
     # Q-learning update rule
-    reward = sum(reward)
+    rewards = sum(rewards)
     best_next_action = np.argmax(Q[next_state])
-    td_target = reward + discount_factor * Q[next_state][best_next_action]
+    td_target = rewards + discount_factor * Q[next_state][best_next_action]
     td_error = td_target - Q[state_index][action_index]
     Q[state_index][action_index] += learning_rate * td_error
+    return Q
     
 def get_Q_row(states:dict, num_states_2:int, num_states_3:int,num_states_4:int):
     """
@@ -340,19 +341,33 @@ def Reinforcement_learning_loop():
     
     Q_table,states,actions = initialize_variables(number_of_states,number_of_actions)
     epsilon=1
+    discount_factor=1
+    learning_rate=1
+    xi = 1
+    
     while(1):
         actions = choose_Action(Q_table,epsilon,states, num_co2_room_states, num_temp_room_states,num_temp_outside_states,num_req_inlet_flow_actions,num_req_inlet_flow_actions,number_of_actions)
         action_values = convert_actions_to_values(actions)
         req_inlet_temperature_values = action_values['req_inlet_temperature_values']
         req_inlet_flow_values = action_values['req_inlet_flow_values']
         recirc_damper_pos_values = action_values['recirc_damper_pos_values']
-        airmaster_sim_state = set_airmaster_sim_state(userdefined_requested_room_temperature,action_values['req_inlet_temperature_values'],action_values['recirc_damper_pos_values'])
+        airmaster_sim_state = set_airmaster_sim_state(userdefined_requested_room_temperature,req_inlet_temperature_values,recirc_damper_pos_values)
         """
             Here we send our action_values (req_inlet_temperature_values, req_inlet_flow_values, and recirc_damper_pos_values)
             and the airmaster_sim_state to the Airmaster simulation tool
             in return we should get the state'    
         """
         rewards = reward_function()#reward_function(temperature_room:float,CO2_room:float)
+        #save state as next_state and get next_state_index
+        next_states=0
+        next_state_index=0
+        Q_index = get_Q_index(states, num_co2_room_states, num_temp_outside_states,num_time_of_day_states,actions,num_req_inlet_flow_actions,num_recirc_damp_actions)
+        Q_table = update_Q(Q_table,Q_index[0],Q_index[1], rewards, next_state_index, discount_factor, learning_rate)
+        
+        epsilon = epsilon*xi
+        learning_rate = learning_rate*xi
+        states = next_states
+        
     
 
     
