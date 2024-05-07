@@ -336,11 +336,20 @@ def Reinforcement_learning_loop():
     num_recirc_damp_actions = 2
     number_of_actions = num_req_inlet_temp_actions*num_req_inlet_flow_actions*num_recirc_damp_actions 
     
+    userdefined_requested_room_temperature = 23
     
     Q_table,states,actions = initialize_variables(number_of_states,number_of_actions)
     epsilon=1
     while(1):
         actions = choose_Action(Q_table,epsilon,states, num_co2_room_states, num_temp_room_states,num_temp_outside_states,num_req_inlet_flow_actions,num_req_inlet_flow_actions,number_of_actions)
+        action_values = convert_actions_to_values(actions)
+        airmaster_sim_state = set_airmaster_sim_state(userdefined_requested_room_temperature,action_values['req_inlet_temperature_values'],action_values['recirc_damper_pos_values'])
+        """
+            Here we send our action_values (req_inlet_temperature_values, req_inlet_flow_values, and recirc_damper_pos_values)
+            and the airmaster_sim_state to the Airmaster simulation tool
+            in return we should get the state'    
+        """
+        rewards = reward_function()#reward_function(temperature_room:float,CO2_room:float)
     
 
     
