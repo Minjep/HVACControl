@@ -132,6 +132,7 @@ def convert_values_to_states(values:dict):
 
 
     #Get time of day state
+    """
     min_time = "05:00:00"
     max_time = "17:00:00"
     min_time = datetime.strptime(min_time, '%H:%M:%S')
@@ -140,6 +141,7 @@ def convert_values_to_states(values:dict):
 
     time_difference = time - min_time
     states['time_of_day'] = (time_difference.seconds // 3600)
+    """
     
     return states
 
@@ -173,7 +175,7 @@ def get_Q_index(states:dict, num_states_2:int, num_states_3:int,num_states_4:int
     return Q_index
 
  
-def update_Q(Q:np.array, state_index:int, action_index:int, rewards:np.array, next_state:int, discount_factor:float, learning_rate:float):
+def update_Q(Q:np.array, state_index:int, action_index:int, rewards:np.array, next_state_index:int, discount_factor:float, learning_rate:float):
     """
     Update the Q-value based on the reward received and the highest Q-value of the next state.
     
@@ -188,8 +190,8 @@ def update_Q(Q:np.array, state_index:int, action_index:int, rewards:np.array, ne
     """
     # Q-learning update rule
     rewards = sum(rewards)
-    best_next_action = np.argmax(Q[next_state])
-    td_target = rewards + discount_factor * Q[next_state][best_next_action]
+    best_next_action = np.argmax(Q[next_state_index])
+    td_target = rewards + discount_factor * Q[next_state_index][best_next_action]
     td_error = td_target - Q[state_index][action_index]
     Q[state_index][action_index] += learning_rate * td_error
     return Q
