@@ -277,8 +277,35 @@ def find_random_action(number_of_actions:int):
     random_integer = random.randint(0, number_of_actions-1)
     return random_integer
     
+
+def set_airmaster_sim_state(requested_room_temperature:float,requested_inlet_temperature:float,recirc_damp:int):
+    """convert states and action in reinforcement learning, to a state in the Airmaster simulation tool
+
+    Args:
+        requested_room_temperature (float): user defined prefered room temperature
+        requested_inlet_temperature (float): inlet temperature given from an action by the agent
+        recirc_damp (int): whether the system should be in ventilation (recirc_damp=0) or recirculation (recirc_damp=100)
+
+    Returns:
+        int: the state that should be given to the airmaster simulation tool
+    """
+    if recirc_damp == 0:
+        if requested_inlet_temperature<requested_room_temperature:
+            airmaster_state = 0#ventilation_cooling 
+        else:
+            airmaster_state = 0#ventilation_heating
+    else:
+        if requested_inlet_temperature<requested_room_temperature:
+            airmaster_state = 0#recirculation_cooling 
+        else:
+            airmaster_state = 0#recirculation_heating
+    return airmaster_state
+    
+    
+
     
 def main():
+    data =loadPklFile('finalData.pkl')
     num_temp_room_states = 20
     num_co2_room_states = 14
     num_temp_outside_states = 27
@@ -310,6 +337,7 @@ def main():
 
     Q_index = get_Q_index(states, num_co2_room_states, num_time_of_day_states,actions,num_req_inlet_flow_actions,num_recirc_damp_actions)
 
+    action=choose_Action(Q,0,states, num_co2_room_states, num_temp_room_states,num_temp_outside_states,number_of_actions)
     
 
 
@@ -320,28 +348,4 @@ def main():
    
 
 if __name__ == "__main__":
-    num_temp_room_states = 20
-    num_co2_room_states = 14
-    num_temp_outside_states = 27
-    num_time_of_day_states = 12
-   
-    number_of_states = num_temp_room_states*num_co2_room_states*num_time_of_day_states*num_temp_outside_states
-    
-    num_req_inlet_temp_actions = 21
-    num_req_inlet_flow_actions = 8
-    num_recirc_damp_actions = 2
-    number_of_actions = num_req_inlet_temp_actions*num_req_inlet_flow_actions*num_recirc_damp_actions #21 requested inlet temperature, 8 requested inlet flow, 2 recirc damper position
-    Q,states,actions = initialize_variables(number_of_states,number_of_actions)
-
-    state_values = {'temperature_room_value': 0,  'co2_room_value': 390,  'time_of_day_values': "05:30:00",'temperature_outside_value':-100}
-    states = convert_values_to_states(state_values)
-    print("State:", states)
-
-    for i in range(Q.shape[0]):
-        Q[i,:] = i
-        
-    for i in range(Q.shape[1]):
-        Q[:,i] = Q[:,i]+i 
-    
-    action=choose_Action(Q,0,states, num_co2_room_states, num_temp_room_states,num_temp_outside_states,number_of_actions)
-    print("done")
+    main()
