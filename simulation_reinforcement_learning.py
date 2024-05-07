@@ -214,10 +214,24 @@ def get_Q_row(states:dict, num_states_2:int, num_states_3:int,num_states_4:int):
     Q_row = state_index
     return Q_row
 
-def choose_Action(Q_matrix:np.array,epsilon:float,states:dict, num_states_2:int, num_states_3:int,num_states_4:int,number_of_actions:int):
-    """
-    Choose an action based on the epsilon-greedy strategy.
+def convert_action_index_to_actions(action_index,num_action_2,num_action_3):
+    req_inlet_temperature = action_index // (num_action_2 * num_action_3)
+
+    # Use modular arithmetic to get remainder after removing req_inlet_temperature part
+    remainder = action_index % (num_action_2 * num_action_3)
+
+    # Calculate req_inlet_flow
+    req_inlet_flow = remainder // num_action_3
+
+    # Calculate recirc_damper_pos
+    recirc_damper_pos = remainder % num_action_3
     
+    actions = {'req_inlet_temperature': req_inlet_temperature,  'req_inlet_flow': req_inlet_flow,  'recirc_damper_pos': recirc_damper_pos}
+    return actions
+
+def choose_Action(Q_matrix:np.array,epsilon:float,states:dict, num_states_2:int, num_states_3:int,num_states_4:int,num_action_2:int,num_action_3:int,number_of_actions:int):
+    """Choose an action based on the epsilon-greedy strategy.
+
     Parameters:
         Q_matrix (numpy.ndarray): The Q-table.
         epsilon (float): Probability threshold for choosing a random action.
@@ -225,20 +239,28 @@ def choose_Action(Q_matrix:np.array,epsilon:float,states:dict, num_states_2:int,
         num_states_2 (int): Total number of secondary states.
         num_states_3 (int): Total number of tertiary states.
         num_states_4 (int): Total number of quaternary states.
+        num_action_2 (int): _description_
+        num_action_3 (int): _description_
         number_of_actions (int): Total number of actions available.
     
     Returns:
         int: The chosen action index.
+
+    Returns:
+        dict: a dict consition of the actions: inlet temperature action, inlet flow action, recirc damper bypass pos action  
     """
     random_number = random.random()
     print(random_number)
 
     if (random_number<epsilon):
         print("choosing random action")
-        return find_random_action(number_of_actions)
+        action_index = find_random_action(number_of_actions)
     else: 
         print("choosing optimal action")
-        return find_optimal_action(Q_matrix,states, num_states_2, num_states_3,num_states_4)
+        action_index = find_optimal_action(Q_matrix,states, num_states_2, num_states_3,num_states_4)
+        
+    actions = convert_action_index_to_actions(action_index,num_action_2,num_action_3)
+    return actions
 
 def find_optimal_action(Q_matrix:np.array,states:dict, num_states_2:int, num_states_3:int,num_states_4:int):
     """
@@ -301,6 +323,24 @@ def set_airmaster_sim_state(requested_room_temperature:float,requested_inlet_tem
             airmaster_state = 0#recirculation_heating
     return airmaster_state
     
+    
+def Reinforcement_learning_loop():
+    num_temp_room_states = 20
+    num_co2_room_states = 14
+    num_temp_outside_states = 27
+    num_time_of_day_states = 1 #normally 12, but the day cyclus does not have an influence in the Airmaster simulation tool
+    number_of_states = num_temp_room_states*num_co2_room_states*num_time_of_day_states*num_temp_outside_states
+    
+    num_req_inlet_temp_actions = 21
+    num_req_inlet_flow_actions = 8
+    num_recirc_damp_actions = 2
+    number_of_actions = num_req_inlet_temp_actions*num_req_inlet_flow_actions*num_recirc_damp_actions 
+    
+    
+    Q_table,states,actions = initialize_variables(number_of_states,number_of_actions)
+    epsilon=1
+    while(1):
+        actions = choose_Action(Q_table,epsilon,states, num_co2_room_states, num_temp_room_states,num_temp_outside_states,num_req_inlet_flow_actions,num_req_inlet_flow_actions,number_of_actions)
     
 
     
