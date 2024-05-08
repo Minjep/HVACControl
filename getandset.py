@@ -61,32 +61,36 @@ class MQTTController:
 class ReinforcementLearningEnvironment:
     def __init__(self):
         # Initialize all simulation parameters
-        self.num_temp_room_states = 20
-        self.num_co2_room_states = 14
-        self.num_temp_outside_states = 27
+        self.num_temp_room_states = 3
+        self.num_co2_room_states = 3
+        self.num_temp_outside_states = 20
         self.num_time_of_day_states = 1  # Usually 12, but not influencing the simulation in this setup
         self.number_of_states = (self.num_temp_room_states * self.num_co2_room_states *
                                  self.num_time_of_day_states * self.num_temp_outside_states)
 
-        self.num_req_inlet_temp_actions = 21
-        self.num_req_inlet_flow_actions = 8
+        self.num_req_inlet_temp_actions = 3
+        self.num_req_inlet_flow_actions = 3
         self.num_recirc_damp_actions = 2
         self.number_of_actions = (self.num_req_inlet_temp_actions * self.num_req_inlet_flow_actions *
                                   self.num_recirc_damp_actions)
 
         self.userdefined_requested_room_temperature = 23
         self.epsilon = 1  # Exploration rate
-        self.discount_factor =1
+        self.discount_factor =0.9
         self.learning_rate=1
-        self.xi = 1
+        self.xi = 0.9998
         self.firstLogTime=0
         self.loginterval=120
 
         # Initialize Q-table and state-action mappings
         self.Q_table, self.states, self.actions = self.initialize_variables(self.number_of_states, self.number_of_actions)
 
-    def initialize_variables(self, num_states, num_actions):
-        states = {'temperature_room': 0, 'co2_room': 0, 'temperature_outside': 0, 'time_of_day': 0}
+    def initialize_variables(self, num_states, num_actions, t_ao):
+        temp_outside_stepsize = 2
+        temp_outside_min = -8
+        temp_outside_max = 28
+        t_ao_state = max(0, min((t_ao - temp_outside_min) // temp_outside_stepsize, (temp_outside_max - temp_outside_min) // temp_outside_stepsize))
+        states = {'temperature_room': 0, 'co2_room': 0, 'temperature_outside': t_ao_state, 'time_of_day': 0}
         actions = {'req_inlet_temperature': 0, 'req_inlet_flow': 0, 'recirc_damper_pos': 0}
         Q_table = np.zeros((num_states, num_actions))
         return Q_table, states, actions
@@ -103,9 +107,10 @@ class ReinforcementLearningEnvironment:
 
         return [temperature_reward, CO2_reward]
     def convert_actions_to_values(self, actions):
+        
         action_values = {
-            'req_inlet_temperature_values': actions['req_inlet_temperature'] * 0.5 + 16,
-            'req_inlet_flow_values': actions['req_inlet_flow'] * 10 + 30,
+            'req_inlet_temperature_values': actions['req_inlet_temperature'] * 2 + 21,
+            'req_inlet_flow_values': actions['req_inlet_flow'] * 35 + 30,
             'recirc_damper_pos_values': actions['recirc_damper_pos'] * 100
         }
         return action_values
@@ -113,32 +118,32 @@ class ReinforcementLearningEnvironment:
     def convert_values_to_states(self, values):
         states = {'temperature_room': 0, 'co2_room': 0, 'temperature_outside': 0, 'time_of_day': 0}
         intervals = [
-            (float('-inf'), 21.5), (21.5, 21.8), (21.8, 22.1), (22.1, 22.3), (22.3, 22.5), 
-            (22.5, 22.6), (22.6, 22.7), (22.7, 22.8), (22.8, 22.9), (22.9, 23),
-            (23, 23.1), (23.1, 23.2), (23.2, 23.3), (23.3, 23.4), (23.4, 23.5),
-            (23.5, 23.7), (23.7, 23.9), (23.9, 24.2), (24.2, 24.5), (24.5, float('inf'))
+            (float('-inf'), 22.5), (22.5, 23.5), (23.5, float('inf'))
         ]
         for i, (lower, upper) in enumerate(intervals):
             if lower <= values['temperature_room_value'] < upper:
                 states['temperature_room'] = i
 
-        co2_room_min = 400
-        co2_room_max = 1000
-        co2_room_stepsize = 50
-        states['co2_room'] = max(0, min((values['co2_room_value'] - co2_room_min) // co2_room_stepsize, (co2_room_max - co2_room_min) // co2_room_stepsize))
+        if values['co2_room_value'] < 600:
+            states['co2_room']=0
+        elif values['co2_room_value'] < 900:
+            states['co2_room']=1
+        else:
+            states['co2_room']=2
         
         temp_outside_stepsize = 2
-        temp_outside_min = -20
-        temp_outside_max = 30
+        temp_outside_min = -8
+        temp_outside_max = 28
         states['temperature_outside'] = max(0, min((values['temperature_outside_value'] - temp_outside_min) // temp_outside_stepsize, (temp_outside_max - temp_outside_min) // temp_outside_stepsize))
 
         return states
 
     def get_Q_index(self, states, actions):
-        state_index = (states['temperature_room'] * self.num_co2_room_states * self.num_temp_outside_states * self.num_time_of_day_states +
-                       states['co2_room'] * self.num_temp_outside_states * self.num_time_of_day_states +
-                       states['temperature_outside'] * self.num_time_of_day_states +
-                       states['time_of_day'])
+        state_index = (states['temperature_outside'] * self.num_temp_room_states * self.num_co2_room_states  * self.num_time_of_day_states +
+                       states['temperature_room'] * self.num_co2_room_states * self.num_time_of_day_states +
+                        states['co2_room']) #* self.num_time_of_day_states +states['time_of_day']
+                        
+        
 
         action_index = (actions['req_inlet_temperature'] * self.num_req_inlet_flow_actions * self.num_recirc_damp_actions +
                         actions['req_inlet_flow'] * self.num_recirc_damp_actions +
@@ -156,10 +161,9 @@ class ReinforcementLearningEnvironment:
         self.epsilon = self.epsilon*self.xi
         self.learning_rate = self.learning_rate*self.xi
     def get_Q_row(self, states):
-        state_index = (states['temperature_room'] * self.num_co2_room_states * self.num_temp_outside_states * self.num_time_of_day_states +
-                   states['co2_room'] * self.num_temp_outside_states * self.num_time_of_day_states +
-                   states['temperature_outside'] * self.num_time_of_day_states +
-                   states['time_of_day'])
+        state_index = (states['temperature_outside'] * self.num_temp_room_states * self.num_co2_room_states  * self.num_time_of_day_states +
+                       states['temperature_room'] * self.num_co2_room_states * self.num_time_of_day_states +
+                        states['co2_room']) #* self.num_time_of_day_states +states['time_of_day']
         return int(state_index)
     def convert_action_index_to_actions(self, action_index):
         req_inlet_temperature = action_index // (self.num_req_inlet_flow_actions * self.num_recirc_damp_actions)
