@@ -132,6 +132,7 @@ def convert_values_to_states(values:dict):
 
 
     #Get time of day state
+    """
     min_time = "05:00:00"
     max_time = "17:00:00"
     min_time = datetime.strptime(min_time, '%H:%M:%S')
@@ -140,6 +141,7 @@ def convert_values_to_states(values:dict):
 
     time_difference = time - min_time
     states['time_of_day'] = (time_difference.seconds // 3600)
+    """
     
     return states
 
@@ -173,7 +175,7 @@ def get_Q_index(states:dict, num_states_2:int, num_states_3:int,num_states_4:int
     return Q_index
 
  
-def update_Q(Q:np.array, state_index:int, action_index:int, reward:float, next_state:int, discount_factor:float, learning_rate:float):
+def update_Q(Q:np.array, state_index:int, action_index:int, rewards:np.array, next_state_index:int, discount_factor:float, learning_rate:float):
     """
     Update the Q-value based on the reward received and the highest Q-value of the next state.
     
@@ -181,17 +183,18 @@ def update_Q(Q:np.array, state_index:int, action_index:int, reward:float, next_s
         Q (numpy.ndarray): The Q-table.
         state_index (int): Index for the current state.
         action_index (int): Index for the current action.
-        reward (float): Reward received.
+        reward (np.array): Reward received.
         next_state (int): Index for the next state.
         discount_factor (float): Discount factor for future rewards.
         learning_rate (float): Learning rate.
     """
     # Q-learning update rule
-    reward = sum(reward)
-    best_next_action = np.argmax(Q[next_state])
-    td_target = reward + discount_factor * Q[next_state][best_next_action]
+    rewards = sum(rewards)
+    best_next_action = np.argmax(Q[next_state_index])
+    td_target = rewards + discount_factor * Q[next_state_index][best_next_action]
     td_error = td_target - Q[state_index][action_index]
     Q[state_index][action_index] += learning_rate * td_error
+    return Q
     
 def get_Q_row(states:dict, num_states_2:int, num_states_3:int,num_states_4:int):
     """
@@ -214,10 +217,24 @@ def get_Q_row(states:dict, num_states_2:int, num_states_3:int,num_states_4:int):
     Q_row = state_index
     return Q_row
 
-def choose_Action(Q_matrix:np.array,epsilon:float,states:dict, num_states_2:int, num_states_3:int,num_states_4:int,number_of_actions:int):
-    """
-    Choose an action based on the epsilon-greedy strategy.
+def convert_action_index_to_actions(action_index,num_action_2,num_action_3):
+    req_inlet_temperature = action_index // (num_action_2 * num_action_3)
+
+    # Use modular arithmetic to get remainder after removing req_inlet_temperature part
+    remainder = action_index % (num_action_2 * num_action_3)
+
+    # Calculate req_inlet_flow
+    req_inlet_flow = remainder // num_action_3
+
+    # Calculate recirc_damper_pos
+    recirc_damper_pos = remainder % num_action_3
     
+    actions = {'req_inlet_temperature': req_inlet_temperature,  'req_inlet_flow': req_inlet_flow,  'recirc_damper_pos': recirc_damper_pos}
+    return actions
+
+def choose_Action(Q_matrix:np.array,epsilon:float,states:dict, num_states_2:int, num_states_3:int,num_states_4:int,num_action_2:int,num_action_3:int,number_of_actions:int):
+    """Choose an action based on the epsilon-greedy strategy.
+
     Parameters:
         Q_matrix (numpy.ndarray): The Q-table.
         epsilon (float): Probability threshold for choosing a random action.
@@ -225,20 +242,28 @@ def choose_Action(Q_matrix:np.array,epsilon:float,states:dict, num_states_2:int,
         num_states_2 (int): Total number of secondary states.
         num_states_3 (int): Total number of tertiary states.
         num_states_4 (int): Total number of quaternary states.
+        num_action_2 (int): _description_
+        num_action_3 (int): _description_
         number_of_actions (int): Total number of actions available.
     
     Returns:
         int: The chosen action index.
+
+    Returns:
+        dict: a dict consition of the actions: inlet temperature action, inlet flow action, recirc damper bypass pos action  
     """
     random_number = random.random()
     print(random_number)
 
     if (random_number<epsilon):
         print("choosing random action")
-        return find_random_action(number_of_actions)
+        action_index = find_random_action(number_of_actions)
     else: 
         print("choosing optimal action")
-        return find_optimal_action(Q_matrix,states, num_states_2, num_states_3,num_states_4)
+        action_index = find_optimal_action(Q_matrix,states, num_states_2, num_states_3,num_states_4)
+        
+    actions = convert_action_index_to_actions(action_index,num_action_2,num_action_3)
+    return actions
 
 def find_optimal_action(Q_matrix:np.array,states:dict, num_states_2:int, num_states_3:int,num_states_4:int):
     """
@@ -277,8 +302,79 @@ def find_random_action(number_of_actions:int):
     random_integer = random.randint(0, number_of_actions-1)
     return random_integer
     
+
+def set_airmaster_sim_state(requested_room_temperature:float,requested_inlet_temperature:float,recirc_damp:int):
+    """convert states and action in reinforcement learning, to a state in the Airmaster simulation tool
+
+    Args:
+        requested_room_temperature (float): user defined prefered room temperature
+        requested_inlet_temperature (float): inlet temperature given from an action by the agent
+        recirc_damp (int): whether the system should be in ventilation (recirc_damp=0) or recirculation (recirc_damp=100)
+
+    Returns:
+        int: the state that should be given to the airmaster simulation tool
+    """
+    if recirc_damp == 0:
+        if requested_inlet_temperature<requested_room_temperature:
+            airmaster_state = 0#ventilation_cooling 
+        else:
+            airmaster_state = 0#ventilation_heating
+    else:
+        if requested_inlet_temperature<requested_room_temperature:
+            airmaster_state = 0#recirculation_cooling 
+        else:
+            airmaster_state = 0#recirculation_heating
+    return airmaster_state
+    
+    
+def Reinforcement_learning_loop():
+    num_temp_room_states = 20
+    num_co2_room_states = 14
+    num_temp_outside_states = 27
+    num_time_of_day_states = 1 #normally 12, but the day cyclus does not have an influence in the Airmaster simulation tool
+    number_of_states = num_temp_room_states*num_co2_room_states*num_time_of_day_states*num_temp_outside_states
+    
+    num_req_inlet_temp_actions = 21
+    num_req_inlet_flow_actions = 8
+    num_recirc_damp_actions = 2
+    number_of_actions = num_req_inlet_temp_actions*num_req_inlet_flow_actions*num_recirc_damp_actions 
+    
+    userdefined_requested_room_temperature = 23
+    
+    Q_table,states,actions = initialize_variables(number_of_states,number_of_actions)
+    epsilon=1
+    discount_factor=1
+    learning_rate=1
+    xi = 1
+    
+    while(1):
+        actions = choose_Action(Q_table,epsilon,states, num_co2_room_states, num_temp_room_states,num_temp_outside_states,num_req_inlet_flow_actions,num_req_inlet_flow_actions,number_of_actions)
+        action_values = convert_actions_to_values(actions)
+        req_inlet_temperature_values = action_values['req_inlet_temperature_values']
+        req_inlet_flow_values = action_values['req_inlet_flow_values']
+        recirc_damper_pos_values = action_values['recirc_damper_pos_values']
+        airmaster_sim_state = set_airmaster_sim_state(userdefined_requested_room_temperature,req_inlet_temperature_values,recirc_damper_pos_values)
+        """
+            Here we send our action_values (req_inlet_temperature_values, req_inlet_flow_values, and recirc_damper_pos_values)
+            and the airmaster_sim_state to the Airmaster simulation tool
+            in return we should get the state'    
+        """
+        rewards = reward_function()#reward_function(temperature_room:float,CO2_room:float)
+        #save state as next_state and get next_state_index
+        next_states=0
+        next_state_index=0
+        Q_index = get_Q_index(states, num_co2_room_states, num_temp_outside_states,num_time_of_day_states,actions,num_req_inlet_flow_actions,num_recirc_damp_actions)
+        Q_table = update_Q(Q_table,Q_index[0],Q_index[1], rewards, next_state_index, discount_factor, learning_rate)
+        
+        epsilon = epsilon*xi
+        learning_rate = learning_rate*xi
+        states = next_states
+        
+    
+
     
 def main():
+    data =loadPklFile('finalData.pkl')
     num_temp_room_states = 20
     num_co2_room_states = 14
     num_temp_outside_states = 27
@@ -310,6 +406,7 @@ def main():
 
     Q_index = get_Q_index(states, num_co2_room_states, num_time_of_day_states,actions,num_req_inlet_flow_actions,num_recirc_damp_actions)
 
+    action=choose_Action(Q,0,states, num_co2_room_states, num_temp_room_states,num_temp_outside_states,number_of_actions)
     
 
 
@@ -320,28 +417,4 @@ def main():
    
 
 if __name__ == "__main__":
-    num_temp_room_states = 20
-    num_co2_room_states = 14
-    num_temp_outside_states = 27
-    num_time_of_day_states = 12
-   
-    number_of_states = num_temp_room_states*num_co2_room_states*num_time_of_day_states*num_temp_outside_states
-    
-    num_req_inlet_temp_actions = 21
-    num_req_inlet_flow_actions = 8
-    num_recirc_damp_actions = 2
-    number_of_actions = num_req_inlet_temp_actions*num_req_inlet_flow_actions*num_recirc_damp_actions #21 requested inlet temperature, 8 requested inlet flow, 2 recirc damper position
-    Q,states,actions = initialize_variables(number_of_states,number_of_actions)
-
-    state_values = {'temperature_room_value': 0,  'co2_room_value': 390,  'time_of_day_values': "05:30:00",'temperature_outside_value':-100}
-    states = convert_values_to_states(state_values)
-    print("State:", states)
-
-    for i in range(Q.shape[0]):
-        Q[i,:] = i
-        
-    for i in range(Q.shape[1]):
-        Q[:,i] = Q[:,i]+i 
-    
-    action=choose_Action(Q,0,states, num_co2_room_states, num_temp_room_states,num_temp_outside_states,number_of_actions)
-    print("done")
+    main()
