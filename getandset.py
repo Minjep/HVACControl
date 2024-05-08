@@ -86,7 +86,11 @@ class ReinforcementLearningEnvironment:
         self.Q_table, self.states, self.actions = self.initialize_variables(self.number_of_states, self.number_of_actions)
 
     def initialize_variables(self, num_states, num_actions, t_ao):
-        states = {'temperature_room': 0, 'co2_room': 0, 'temperature_outside': t_ao, 'time_of_day': 0}
+        temp_outside_stepsize = 2
+        temp_outside_min = -8
+        temp_outside_max = 28
+        t_ao_state = max(0, min((t_ao - temp_outside_min) // temp_outside_stepsize, (temp_outside_max - temp_outside_min) // temp_outside_stepsize))
+        states = {'temperature_room': 0, 'co2_room': 0, 'temperature_outside': t_ao_state, 'time_of_day': 0}
         actions = {'req_inlet_temperature': 0, 'req_inlet_flow': 0, 'recirc_damper_pos': 0}
         Q_table = np.zeros((num_states, num_actions))
         return Q_table, states, actions
