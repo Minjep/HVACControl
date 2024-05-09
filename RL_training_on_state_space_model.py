@@ -1,6 +1,8 @@
 import numpy as np
 import random
 import pickle
+import csv 
+import os
 
 def reward_function(temperature_room:float,CO2_room:float):
     """
@@ -201,6 +203,27 @@ def update_Q(Q:np.array, state_index:int, action_index:int, rewards:np.array, ne
     Q[state_index][action_index] += learning_rate * td_error
     return Q
 
+def saveRewards(type_,reward,header):
+        # Path for the CSV file
+        file_path = f'{type_}.csv'
+
+        # Data to append as a row
+        new_row = header
+
+        # Check if file exists to determine if headers need to be written
+        file_exists = os.path.isfile(file_path)
+
+        # Open the file in append mode ('a') or create it ('+')
+        with open(file_path, mode='a+', newline='') as file:
+            writer = csv.writer(file)
+            
+            # If the file does not exist, write the header first
+            if not file_exists:
+                writer.writerow(new_row)  # Adjust header names as needed
+            
+            # Append the new row
+            writer.writerow(reward)
+
 if __name__ == "__main__":
     fanSteps=5
     ech1Steps=5
@@ -228,8 +251,7 @@ if __name__ == "__main__":
     i=1
     temperatures = [-5, 1, 10, 16, 25]
 
-    outputs=[]
-    rewards=[]
+    accumulated_data = []
 
     for T_out in temperatures:
         print('resetting learning rate and epsilon')
@@ -255,10 +277,8 @@ if __name__ == "__main__":
             U = np.array([[fan_action],[ech1_action], [ech2_action], [hp_action], [bypass_action], [T_out]])
 
             X_recirc,X_vent,Y=simModel(X_recirc,X_vent,U,recirc_state)
-            outputs.append(Y)
 
             reward=reward_function(Y[0,0],Y[1,0])
-            rewards.append(reward)
 
             next_state_index=output_to_Q_row(Y, tempRoomSteps, co2RoomSteps,tempOutSteps,T_out)
             update_Q(Q, q_row, action_index, reward, next_state_index, discount_factor, learning_rate)
@@ -267,16 +287,27 @@ if __name__ == "__main__":
             epsilon=epsilon*psi
 
             i=i+1
+            accumulated_data.append([fan_action,ech1_action,ech2_action,hp_action,bypass_action,recirc_action,T_out,reward[0],reward[1],Y[0,0],Y[1,0]])
 
             if (i%100000==0):
-                np.save('Q.npy', Q)
-                with open('outputs.pkl', 'wb') as f:
-                    pickle.dump(outputs, f)
 
-                with open('rewards.pkl', 'wb') as f:
-                    pickle.dump(rewards, f)
+                np.save('Q.npy', Q)
                 print('100Tusinde iterationer: ',i//100000)
                 zero_count = (Q == 0).sum()
                 zero_procent=((zero_count)/Q.size)*100
                 print('zeros=', zero_count,'. total=',Q.size,'. procent 0er=',zero_procent)
                 print('epsilon=',epsilon,'. learning_rate=',learning_rate)
+
+                file_path="inoutputs.csv"
+                file_exists = os.path.isfile(file_path)
+
+                with open(file_path, mode='a', newline='') as file:
+                    writer = csv.writer(file)
+                    # If the file does not exist, write the header first
+                    if not file_exists:
+                        writer.writerow(["fan", "ech1", "ech2", "hp", "bypass", "recirc", "T_out", "rewardsTemp", "rewardCo2", "outputTemp", "outputCo2"])
+                    # Write accumulated data
+                    writer.writerows(accumulated_data)
+                
+                # Clear the accumulated data after saving
+                accumulated_data = []
