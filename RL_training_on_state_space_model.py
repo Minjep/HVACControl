@@ -1,5 +1,6 @@
 import numpy as np
 import random
+import pickle
 
 def reward_function(temperature_room:float,CO2_room:float):
     """
@@ -33,23 +34,36 @@ def simModel(xR:np.array,xV:np.array,u:np.array,recirc:bool):
                 [0.5, 0.1, 1.3, -0.1, 0.9, 1.8]]) * 1e-3
     CR = np.array([[-60.7, -1.8],
                 [-2711.0, -3222.3]])
+    CR_inv = np.array([
+    [-0.0169, 0.0000],
+    [0.0142, -0.0003]])
+    
     AV = np.array([[913.3, -78.6], [288.0, 144.6]]) * 1e-3
     BV = np.array([[-0.7, -0.3, 0.3, -0.2, -5.5, -5.2],
                 [1.5, 0.3, -0.1, -0.8, 31.6, -0.9]]) * 1e-3
     CV = np.array([[-31.3, 0.4],
                 [-1141.8, 755.0]])
-    
-    
-    xk1R=AR.dot(xR)+BR.dot(u)
-    yR=CR.dot(xV)
-
-    xk1V=AV.dot(xV)+BV.dot(u)
-    yV=CV.dot(xV)
-
-    
+    CV_inv = np.array([
+        [-0.0326, 0.0000],
+        [-0.0493, 0.0014]
+    ])
+       
     if recirc==True:
+        xk1R=AR.dot(xR)+BR.dot(u)
+        yR=CR.dot(xR)
+
+        xV=CV_inv.dot(yR)
+        xk1V=AV.dot(xV)+BV.dot(u)
+
         return xk1R,xk1V,yR
     else:
+        xk1V=AV.dot(xV)+BV.dot(u)
+        yV=CV.dot(xV)
+
+        xR=CR_inv.dot(yV)
+        xk1R=AR.dot(xR)+BR.dot(u)
+
+
         return xk1R,xk1V,yV
 
 def output_to_Q_row(Y, tempRoomSteps, co2RoomSteps,tempOutSteps,tempOut):
@@ -107,14 +121,14 @@ def choose_Action(Q_matrix:np.array,epsilon:float,row:int,number_of_actions:int,
     random_number = random.random()
 
     if (random_number<epsilon):
-        print("choosing random action")
+        #print("choosing random action")
         action_index = find_random_action(number_of_actions)
     else: 
-        print("choosing optimal action")
+        #print("choosing optimal action")
         action_index = find_optimal_action(Q_matrix,row)
         
-    actions = convert_action_index_to_actions(action_index,fanSteps,ech1Steps,ech2Steps,hpSteps,bypassSteps,statesSteps)
-    return actions
+    fan_action,ech1_action,ech2_action,hp_action,bypass_action,recirc_action,index = convert_action_index_to_actions(action_index,fanSteps,ech1Steps,ech2Steps,hpSteps,bypassSteps,statesSteps)
+    return fan_action,ech1_action,ech2_action,hp_action,bypass_action,recirc_action,index
 
 def find_optimal_action(Q_matrix:np.array,row:int):
 
@@ -157,8 +171,8 @@ def convert_action_index_to_actions(index:int,fanSteps,ech1Steps,ech2Steps,hpSte
 
     fan_step=index//(ech1Steps*ech2Steps*hpSteps*bypassSteps*statesSteps)
     remainder=index%(ech1Steps*ech2Steps*hpSteps*bypassSteps*statesSteps)
-    ech1_step=index//(ech2Steps*hpSteps*bypassSteps*statesSteps)
-    remainder=index%(ech2Steps*hpSteps*bypassSteps*statesSteps)
+    ech1_step=remainder//(ech2Steps*hpSteps*bypassSteps*statesSteps)
+    remainder=remainder%(ech2Steps*hpSteps*bypassSteps*statesSteps)
     ech2_step=remainder//(hpSteps*bypassSteps*statesSteps)
     remainder=remainder%(hpSteps*bypassSteps*statesSteps)
     hp_step=remainder//(bypassSteps*statesSteps)
@@ -166,20 +180,17 @@ def convert_action_index_to_actions(index:int,fanSteps,ech1Steps,ech2Steps,hpSte
     bypass_step=remainder//(statesSteps)
     recirc_step=remainder%(statesSteps)
 
-    recirc_action=recirc_step*recirc_step_size
-    bypass_action=bypass_step*bypass_step_size
-    hp_action=hp_step*hp_step_size
-    ech1_action=ech1_step*ech1_step_size
-    ech2_action=ech2_step*ech2_step_size
-    fan_action=fan_step*fan_step_size
+    recirc_action=recirc_min+recirc_step*recirc_step_size
+    bypass_action=bypass_min+bypass_step*bypass_step_size
+    hp_action=hp_min+hp_step*hp_step_size
+    ech1_action=ech_min+ech1_step*ech1_step_size
+    ech2_action=ech_min+ech2_step*ech2_step_size
+    fan_action=fan_min+fan_step*fan_step_size
 
-    return fan_action,ech1_action,ech2_action,hp_action,bypass_action,recirc_action
+    #check
+    #fan_step*(ech1Steps*ech2Steps*hpSteps*bypassSteps*statesSteps)+ech1_step*(ech2Steps*hpSteps*bypassSteps*statesSteps)+ech2_step*(hpSteps*bypassSteps*statesSteps)+hp_step*(bypassSteps*statesSteps)+bypass_step*statesSteps+recirc_step
 
-
-
-
-
-    
+    return fan_action,ech1_action,ech2_action,hp_action,bypass_action,recirc_action,index  
 
 def update_Q(Q:np.array, state_index:int, action_index:int, rewards:np.array, next_state_index:int, discount_factor:float, learning_rate:float):
     # Q-learning update rule
@@ -191,10 +202,6 @@ def update_Q(Q:np.array, state_index:int, action_index:int, rewards:np.array, ne
     return Q
 
 if __name__ == "__main__":
-    X_recirc=np.array([[0,0],[0,0]],float)
-    X_vent=np.array([[0,0],[0,0]],float)
-    Y=np.array([[0],[0]],float)
-
     fanSteps=5
     ech1Steps=5
     ech2Steps=5
@@ -210,14 +217,66 @@ if __name__ == "__main__":
 
     numberOfStates=tempRoomSteps*co2RoomSteps*tempOutSteps
 
-
     Q=np.zeros((numberOfStates,numberOfActions),float)
+    
+    T_out=-5
+    discount_factor=0.9
+    learning_rate=1
+    epsilon=1
+    psi=0.9999999
 
-    for i in range(0,10):
-        U = np.random.rand(6, 1)
+    i=1
+    temperatures = [-5, 1, 10, 16, 25]
 
-        X_recirc,X_vent,Y=simModel(X_recirc,X_vent,U,True)
+    outputs=[]
+    rewards=[]
 
-        q_row = output_to_Q_row(Y, tempRoomSteps, co2RoomSteps,tempOutSteps,0)
+    for T_out in temperatures:
+        print('resetting learning rate and epsilon')
+        learning_rate=1
+        epsilon=1
+        print('temp out er nu: ',T_out)
+        print('resetting states and outputs')
+        X_vent=np.array([[-0.7424],[-0.5929]],float)
+        X_recirc=np.array([[-0.3848],[0.1996]],float)
+        Y=np.array([[23],[400]],float)
+        print("")
 
-        actions=choose_Action(Q,1,q_row,numberOfActions,fanSteps,ech1Steps,ech2Steps,hpSteps,bypassSteps,statesSteps)
+        while(epsilon>0.01):
+            q_row = output_to_Q_row(Y, tempRoomSteps, co2RoomSteps,tempOutSteps,T_out)
+
+            fan_action,ech1_action,ech2_action,hp_action,bypass_action,recirc_action,action_index=choose_Action(Q,epsilon,q_row,numberOfActions,fanSteps,ech1Steps,ech2Steps,hpSteps,bypassSteps,statesSteps)
+
+            if recirc_action==0:
+                recirc_state=True
+            else:
+                recirc_state=False
+            actions = np.array([[fan_action],[ech1_action], [ech2_action], [hp_action], [bypass_action], [recirc_action]])
+            U = np.array([[fan_action],[ech1_action], [ech2_action], [hp_action], [bypass_action], [T_out]])
+
+            X_recirc,X_vent,Y=simModel(X_recirc,X_vent,U,recirc_state)
+            outputs.append(Y)
+
+            reward=reward_function(Y[0,0],Y[1,0])
+            rewards.append(reward)
+
+            next_state_index=output_to_Q_row(Y, tempRoomSteps, co2RoomSteps,tempOutSteps,T_out)
+            update_Q(Q, q_row, action_index, reward, next_state_index, discount_factor, learning_rate)
+
+            learning_rate=learning_rate*psi
+            epsilon=epsilon*psi
+
+            i=i+1
+
+            if (i%100000==0):
+                np.save('Q.npy', Q)
+                with open('outputs.pkl', 'wb') as f:
+                    pickle.dump(outputs, f)
+
+                with open('rewards.pkl', 'wb') as f:
+                    pickle.dump(rewards, f)
+                print('100Tusinde iterationer: ',i//100000)
+                zero_count = (Q == 0).sum()
+                zero_procent=((zero_count)/Q.size)*100
+                print('zeros=', zero_count,'. total=',Q.size,'. procent 0er=',zero_procent)
+                print('epsilon=',epsilon,'. learning_rate=',learning_rate)
