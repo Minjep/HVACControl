@@ -1,6 +1,5 @@
 import numpy as np
 import random
-import pickle
 import csv 
 import os
 
@@ -50,17 +49,24 @@ def simModel(xR:np.array,xV:np.array,u:np.array,recirc:bool):
         [-0.0493, 0.0014]
     ])
        
-    if recirc==True:
-        xk1R=AR.dot(xR)+BR.dot(u)
+    if recirc==True:  
         yR=CR.dot(xR)
+        if yR[1,0]<400:
+            yR[1,0]=400
+            xR=CR_inv.dot(yR)
+
+        xk1R=AR.dot(xR)+BR.dot(u)
 
         xV=CV_inv.dot(yR)
         xk1V=AV.dot(xV)+BV.dot(u)
 
         return xk1R,xk1V,yR
     else:
-        xk1V=AV.dot(xV)+BV.dot(u)
         yV=CV.dot(xV)
+        if yV[1,0]<400:
+            yV[1,0]=400
+            xV=CV_inv.dot(yV)
+        xk1V=AV.dot(xV)+BV.dot(u)
 
         xR=CR_inv.dot(yV)
         xk1R=AR.dot(xR)+BR.dot(u)
@@ -157,7 +163,7 @@ def find_random_action(number_of_actions:int):
     return random_integer
 
 def convert_action_index_to_actions(index:int,fanSteps,ech1Steps,ech2Steps,hpSteps,bypassSteps,statesSteps):
-    fan_min, fan_max = 0, 100  # Assuming these are indices for fan settings
+    fan_min, fan_max = 30, 100  # Assuming these are indices for fan settings
     ech_min, ech_max = 0, 100  # Assuming these are indices for economizer settings
     hp_min, hp_max = -100, 100    # Assuming these are indices for heat pump settings
     bypass_min, bypass_max = 0, 100  # Assuming these are indices for bypass settings
@@ -246,12 +252,10 @@ if __name__ == "__main__":
     discount_factor=0.9
     learning_rate=1
     epsilon=1
-    psi=0.9999999
+    psi=0.99999999
 
     i=1
     temperatures = [-5, 1, 10, 16, 25]
-
-    accumulated_data = []
 
     for T_out in temperatures:
         print('resetting learning rate and epsilon')
@@ -264,7 +268,7 @@ if __name__ == "__main__":
         Y=np.array([[23],[400]],float)
         print("")
 
-        while(epsilon>0.01):
+        while(epsilon>0.001):
             q_row = output_to_Q_row(Y, tempRoomSteps, co2RoomSteps,tempOutSteps,T_out)
 
             fan_action,ech1_action,ech2_action,hp_action,bypass_action,recirc_action,action_index=choose_Action(Q,epsilon,q_row,numberOfActions,fanSteps,ech1Steps,ech2Steps,hpSteps,bypassSteps,statesSteps)
@@ -273,6 +277,7 @@ if __name__ == "__main__":
                 recirc_state=True
             else:
                 recirc_state=False
+
             actions = np.array([[fan_action],[ech1_action], [ech2_action], [hp_action], [bypass_action], [recirc_action]])
             U = np.array([[fan_action],[ech1_action], [ech2_action], [hp_action], [bypass_action], [T_out]])
 
@@ -287,8 +292,7 @@ if __name__ == "__main__":
             epsilon=epsilon*psi
 
             i=i+1
-            accumulated_data.append([fan_action,ech1_action,ech2_action,hp_action,bypass_action,recirc_action,T_out,reward[0],reward[1],Y[0,0],Y[1,0]])
-
+           
             if (i%100000==0):
 
                 np.save('Q.npy', Q)
@@ -307,7 +311,7 @@ if __name__ == "__main__":
                     if not file_exists:
                         writer.writerow(["fan", "ech1", "ech2", "hp", "bypass", "recirc", "T_out", "rewardsTemp", "rewardCo2", "outputTemp", "outputCo2"])
                     # Write accumulated data
-                    writer.writerows(accumulated_data)
+                    writer.writerow([fan_action,ech1_action,ech2_action,hp_action,bypass_action,recirc_action,T_out,reward[0],reward[1],Y[0,0],Y[1,0]])
                 
                 # Clear the accumulated data after saving
                 accumulated_data = []
