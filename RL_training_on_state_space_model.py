@@ -1,35 +1,37 @@
+from numba import jit
 import numpy as np
 import random
-import csv 
+import csv
 import os
+from multiprocessing import Pool
+import time
 
-def reward_function(temperature_room:float,CO2_room:float):
-    """
-    Calculate rewards based on deviation of room temperature and CO2 level from their desired thresholds.
+# Use JIT to optimize functions
+@jit(nopython=True)
+def reward_function(temperature_room: float, CO2_room: float) -> np.ndarray:
+    temperature_variance = 0.272
+    CO2_variance = 151.375
+    requested_room_temperature = 23
+    CO2_average_concentration_outside = 400
     
-    Parameters:
-        temperature_room (float): The current temperature in the room.
-        CO2_room (float): The current CO2 concentration in the room.
-
-    Returns:
-        list: Contains two float values representing the reward for temperature and CO2 level.
-    """
+    temperature_reward = -((temperature_room - requested_room_temperature) / temperature_variance) ** 2
+    CO2_adjusted = max(CO2_average_concentration_outside, CO2_room)
+    CO2_reward = -((CO2_adjusted - CO2_average_concentration_outside) / CO2_variance) ** 2
     
-    temperature_variance = 0.272 #baseret på airmaster data
-    CO2_variance = 151.375 #baseret på airmaster data
-    requested_room_temperature = 23 
-    CO2_average_concentration_outside = 400  
-    
-    temperature_reward = -((temperature_room-requested_room_temperature)/temperature_variance)**2
-    
-    CO2_adjusted = max(CO2_average_concentration_outside,(CO2_room))
-    CO2_reward = -((CO2_adjusted-CO2_average_concentration_outside)/CO2_variance)**2
-    
-    rewards = [temperature_reward,CO2_reward]
-    
+    rewards = np.array([temperature_reward, CO2_reward])
     return rewards
 
-def simModel(xR:np.array,xV:np.array,u:np.array,recirc:bool):
+@jit(nopython=True)
+def update_Q(Q, state_index, action_index, rewards, next_state_index, discount_factor, learning_rate):
+    rewards = np.sum(rewards)
+    best_next_action = np.argmax(Q[next_state_index])
+    td_target = rewards + discount_factor * Q[next_state_index][best_next_action]
+    td_error = td_target - Q[state_index][action_index]
+    Q[state_index][action_index] += learning_rate * td_error
+    return Q
+
+@jit(nopython=True)
+def simModel(xR, xV, u, recirc):
     AR = np.array([[810.5, 8.8], [48.0, 879.8]]) * 1e-3
     BR = np.array([[-1.2, -0.1, -0.2, 0.0, -1.1, -2.2],
                 [0.5, 0.1, 1.3, -0.1, 0.9, 1.8]]) * 1e-3
@@ -49,31 +51,26 @@ def simModel(xR:np.array,xV:np.array,u:np.array,recirc:bool):
         [-0.0493, 0.0014]
     ])
        
-    if recirc==True:  
-        yR=CR.dot(xR)
-        if yR[1,0]<400:
-            yR[1,0]=400
-            xR=CR_inv.dot(yR)
-
-        xk1R=AR.dot(xR)+BR.dot(u)
-
-        xV=CV_inv.dot(yR)
-        xk1V=AV.dot(xV)+BV.dot(u)
-
-        return xk1R,xk1V,yR
+    if recirc:
+        yR = CR.dot(xR)
+        if yR[1,0] < 400:
+            yR[1,0] = 400
+            xR = CR_inv.dot(yR)
+        xk1R = AR.dot(xR) + BR.dot(u)
+        xV = CV_inv.dot(yR)
+        xk1V = AV.dot(xV) + BV.dot(u)
+        return xk1R, xk1V, yR
     else:
-        yV=CV.dot(xV)
-        if yV[1,0]<400:
-            yV[1,0]=400
-            xV=CV_inv.dot(yV)
-        xk1V=AV.dot(xV)+BV.dot(u)
+        yV = CV.dot(xV)
+        if yV[1,0] < 400:
+            yV[1,0] = 400
+            xV = CV_inv.dot(yV)
+        xk1V = AV.dot(xV) + BV.dot(u)
+        xR = CR_inv.dot(yV)
+        xk1R = AR.dot(xR) + BR.dot(u)
+        return xk1R, xk1V, yV
 
-        xR=CR_inv.dot(yV)
-        xk1R=AR.dot(xR)+BR.dot(u)
-
-
-        return xk1R,xk1V,yV
-
+@jit(nopython=True)
 def output_to_Q_row(Y, tempRoomSteps, co2RoomSteps,tempOutSteps,tempOut):
     """
     Converts the output Y to an index for the Q-matrix, accounting for out-of-range values.
@@ -124,7 +121,7 @@ def output_to_Q_row(Y, tempRoomSteps, co2RoomSteps,tempOutSteps,tempOut):
     q_index = (temp_index * co2RoomSteps * tempOutSteps) + (co2_index * tempOutSteps) + tempOut_index
 
     return q_index
-
+@jit(nopython=True)
 def choose_Action(Q_matrix:np.array,epsilon:float,row:int,number_of_actions:int,fanSteps:int,ech1Steps:int,ech2Steps:int,hpSteps:int,bypassSteps:int,statesSteps:int):
     random_number = random.random()
 
@@ -137,7 +134,7 @@ def choose_Action(Q_matrix:np.array,epsilon:float,row:int,number_of_actions:int,
         
     fan_action,ech1_action,ech2_action,hp_action,bypass_action,recirc_action,index = convert_action_index_to_actions(action_index,fanSteps,ech1Steps,ech2Steps,hpSteps,bypassSteps,statesSteps)
     return fan_action,ech1_action,ech2_action,hp_action,bypass_action,recirc_action,index
-
+@jit(nopython=True)
 def find_optimal_action(Q_matrix:np.array,row:int):
 
 
@@ -148,7 +145,7 @@ def find_optimal_action(Q_matrix:np.array,row:int):
     max_action_index = np.argmax(row_values)
 
     return max_action_index
-
+@jit(nopython=True)
 def find_random_action(number_of_actions:int):
     """
     Select a random action index.
@@ -158,10 +155,10 @@ def find_random_action(number_of_actions:int):
     
     Returns:
         int: Randomly selected action index.
-    """
+    """ 
     random_integer = random.randint(0, number_of_actions-1)
     return random_integer
-
+@jit(nopython=True)
 def convert_action_index_to_actions(index:int,fanSteps,ech1Steps,ech2Steps,hpSteps,bypassSteps,statesSteps):
     fan_min, fan_max = 30, 100  # Assuming these are indices for fan settings
     ech_min, ech_max = 0, 100  # Assuming these are indices for economizer settings
@@ -199,7 +196,7 @@ def convert_action_index_to_actions(index:int,fanSteps,ech1Steps,ech2Steps,hpSte
     #fan_step*(ech1Steps*ech2Steps*hpSteps*bypassSteps*statesSteps)+ech1_step*(ech2Steps*hpSteps*bypassSteps*statesSteps)+ech2_step*(hpSteps*bypassSteps*statesSteps)+hp_step*(bypassSteps*statesSteps)+bypass_step*statesSteps+recirc_step
 
     return fan_action,ech1_action,ech2_action,hp_action,bypass_action,recirc_action,index  
-
+@jit(nopython=True)
 def update_Q(Q:np.array, state_index:int, action_index:int, rewards:np.array, next_state_index:int, discount_factor:float, learning_rate:float):
     # Q-learning update rule
     rewards = sum(rewards)
@@ -208,7 +205,7 @@ def update_Q(Q:np.array, state_index:int, action_index:int, rewards:np.array, ne
     td_error = td_target - Q[state_index][action_index]
     Q[state_index][action_index] += learning_rate * td_error
     return Q
-
+@jit(nopython=True)
 def saveRewards(type_,reward,header):
         # Path for the CSV file
         file_path = f'{type_}.csv'
@@ -252,7 +249,7 @@ if __name__ == "__main__":
     discount_factor=0.9
     learning_rate=1
     epsilon=1
-    psi=0.99999999
+    psi=0.9999999
 
     i=1
     temperatures = [-5, 1, 10, 16, 25]
@@ -267,7 +264,7 @@ if __name__ == "__main__":
         X_recirc=np.array([[-0.3848],[0.1996]],float)
         Y=np.array([[23],[400]],float)
         print("")
-
+        t= time.time() 
         while(epsilon>0.001):
             q_row = output_to_Q_row(Y, tempRoomSteps, co2RoomSteps,tempOutSteps,T_out)
 
@@ -294,7 +291,9 @@ if __name__ == "__main__":
             i=i+1
            
             if (i%100000==0):
-
+                elapsed = time.time() - t
+                print('tid: ',elapsed)
+                t = time.time()
                 np.save('Q.npy', Q)
                 print('100Tusinde iterationer: ',i//100000)
                 zero_count = (Q == 0).sum()
