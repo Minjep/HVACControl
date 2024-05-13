@@ -13,42 +13,35 @@ data100train=data.data_100_train;
 data=load("data0train.mat");
 data0train=data.data_0_train;
 
-designSys=sys0;
+designSys=sys100;
 designData=data100train;
 
 numInputs=size(sys100.B,2);
 numStates=size(sys100.A,1);
 numOutputs=size(sys100.C,1);
-
 %Q=[0.022, 0;
 %    0,0.00001];
 
 %designDataOutput = designData(:, [8]);
-%Q_mark = 1 / (max(designDataOutput{:,8})^2)
 %for i = 1:numOutputs
 %       Q_mark(i, i) = 1 / (max(designDataOutput{:,i})'^2);
 %end
-% Q_mark = [0.0017955     ,       0;
-%              0   1.0628e-06]
-% disp('Diagonal Matrix Q_mark:');
-% disp(Q_mark);
-% 
-% 
-% 
-% Q = designSys.C'*Q_mark*designSys.C;
-% disp('Diagonal Matrix Q:');
-% disp(Q);
+%Q_mark = [0.0017955     ,       0;
+%             0   1.0628e-06]
+specialC = designSys.C(1,:);
+Q = (1/0.5^2)
+Qmark = specialC'*Q*specialC;
+disp('Diagonal Matrix Qmark:');
+disp(Qmark);
 
-Q = [1/0.5^2, 0;
-     0,   1/50^2]
-Qmark = designSys.C'*Q*designSys.C;
-
+invC=inv(designSys.C)
+specialCinv = invC(1,:);
 % R = zeros(numInputs, numInputs);
 % for i = 1:numInputs
-%     %R(i, i) = 1 / (max(designData{:,i})'^2);
-%     R(i, i) = 1 / (100^2);
-%     %R(i, i) = 1 / (100^2)*1/10;
-%     %R(i, i) = 1 ;  % Set the diagonal entry based on max_y
+% %     %R(i, i) = 1 / (max(designData{:,i})'^2);
+%      R(i, i) = 1 / (100^2)*1/10;
+% %     %R(i, i) = 1 / (100^2)*1/10;
+% %     %R(i, i) = 1 ;  % Set the diagonal entry based on max_y
 % end
 
  R=[0.0001*10, 0 , 0 , 0 , 0 , 0;
@@ -56,30 +49,28 @@ Qmark = designSys.C'*Q*designSys.C;
      0 , 0 , 0.0001*15 , 0 , 0 , 0;
      0 , 0 , 0 , 0.0001*5, 0 , 0;
      0 , 0 , 0 , 0 , 0.0001, 0;
-     0 , 0 , 0 , 0 , 0 , 0.0001*15];
+     0 , 0 , 0 , 0 , 0 , 0.0001*15]*10;
 
 disp('Diagonal Matrix R:');
 disp(R);
 
 
 
-% Design LQR controller
+%% Design LQR controller
 specialB=designSys.B;
 specialB(:,end)=[0;0]
+specialD=designSys.D(1,:)
 [K,P,eigenvalues_cl] = dlqr(designSys.A,specialB, Qmark, R);
 K_manual=inv(R+specialB'*P*specialB)*specialB'*P*designSys.A;
 N=inv(R+specialB'*P*specialB)*specialB';
 Phi=designSys.A-specialB*K;
-v=inv(eye(numStates)-Phi')*designSys.C'*Q;
+v=inv(eye(numStates)-Phi')*specialC'*Q;
 N_ref=N*v;
 disp('LQR Gain Matrix K:');
 disp(K);
 
-
-
 % Check stability
-sys_closed=ss(designSys.A - designSys.B*K, specialB, designSys.C, designSys.D, designSys.Ts);
-if plots
+sys_closed=ss(designSys.A - specialB*K, specialB, specialC, specialD, designSys.Ts);
 figure;
 pzmap(sys_closed);
 title('Eigenvalues of A_{cl} = A - BK');
@@ -87,13 +78,12 @@ xlabel('Real Part');
 ylabel('Imaginary Part');
 grid on;
 axis equal;
-end
 
 
 % simulating the system
-ref = zeros(numOutputs,1000);
+ref = zeros(1,1000);
 ref(1,:) = 20;
-ref( 2,:) = 500;
+%ref( 2,:) = 500;
 u_ref = (N_ref*ref)';
 timeaxis=0:15:1000*15;
 timeaxis=timeaxis(1:end-1);
@@ -103,12 +93,11 @@ steady_state_error = ref(:,1) - steady_state_value';
 disp("System feedback Steady State Error");
 
 disp(['Steady-state error for Output 1: ', num2str(steady_state_error(1))]);
-disp(['Steady-state error for Output 2: ', num2str(steady_state_error(2))]);
 
-if plots
+
 
 figure;
-subplot(2, 1, 1);
+subplot(1, 1, 1);
 plot(timeaxis, y_cl(:, 1), 'b', 'LineWidth', 2);  % Plot output 1
 hold on;
 yline(ref(1:1), 'k--', 'LineWidth', 1.5);  % Plot reference input
@@ -118,34 +107,21 @@ legend('Output 1', 'Reference');
 title('Simulated Response of Multi-Output System - Output 1');
 grid on;
 
-subplot(2, 1, 2);
-plot(timeaxis, y_cl(:, 2), 'r', 'LineWidth', 2);  % Plot output 2
-hold on;
-yline(ref(2:2), 'k--', 'LineWidth', 1.5);  % Plot reference input
-xlabel('Time');
-ylabel('Output 2');
-legend('Output 2', 'Reference');
-title('Simulated Response of Multi-Output System - Output 2');
-grid on;
-hold off;
 
-end
 % Now design observer
 
 % The observer should have the same poles as the closed-loop system (or faster)
 % We will design the observer poles to be a bit faster than the closed-loop poles
 
-observer_poles = 0.5*eigenvalues_cl;
-L = place(designSys.A', designSys.C', observer_poles)';
+observer_poles = 1*eigenvalues_cl;
+L = place(designSys.A', specialC', observer_poles)';
 disp('Observer Gain Matrix L:');
 disp(L);
 
 % Check stability of the observer
-observer_A = designSys.A - L*designSys.C;
+observer_A = designSys.A - L*specialC;
 observer_eigenvalues = eig(observer_A);
-sys_observer=ss(observer_A,designSys.B,designSys.C,designSys.D,designSys.Ts);
-if plots
-
+sys_observer=ss(observer_A,designSys.B,specialC,specialD,designSys.Ts);
 figure;
 pzmap(sys_observer);
 if all( abs(observer_eigenvalues) < 1 )
@@ -153,23 +129,22 @@ if all( abs(observer_eigenvalues) < 1 )
 else
     disp('Observer is not stable');
 end
-end
+
 
 % Simulate the observer
 
 At = [ designSys.A-designSys.B*K, designSys.B*K
-       zeros(size(designSys.A)),designSys.A-L*designSys.C ];
+       zeros(size(designSys.A)),designSys.A-L*specialC ];
 
-Bt = [specialB*N_ref
+Bt = [designSys.B*N_ref
        zeros(size(designSys.B*N_ref)) ];
 
-Ct = [ designSys.C    zeros(size(designSys.C)) ];
+Ct = [ specialC    zeros(size(specialC)) ];
 
 sys_withobs= ss(At, Bt, Ct, 0, designSys.Ts);
 
-ref = zeros(numOutputs,1000);
+ref = zeros(1,1000);
 ref(1,:) = 20;
-ref( 2,:) = 500;
 u_ref = (ref)';
 timeaxis=0:15:1000*15;
 timeaxis=timeaxis(1:end-1);
@@ -178,12 +153,10 @@ steady_state_value = y_cl_obs(end, :);
 steady_state_error = ref(:,1) - steady_state_value';
 disp("System with observer Steady State Error");
 disp(['Steady-state error for Output 1: ', num2str(steady_state_error(1))]);
-disp(['Steady-state error for Output 2: ', num2str(steady_state_error(2))]);
 
-if plots
 
 figure;
-subplot(2, 1, 1);
+subplot(1, 1, 1);
 plot(timeaxis, y_cl_obs(:, 1), 'b', 'LineWidth', 2);  % Plot output 1
 hold on;
 yline(ref(1:1), 'k--', 'LineWidth', 1.5);  % Plot reference input
@@ -192,18 +165,7 @@ ylabel('Output 1');
 legend('Output 1', 'Reference');
 title('Simulated Response of Multi-Output System - Output 1');
 grid on;
-
-subplot(2, 1, 2);
-plot(timeaxis, y_cl_obs(:, 2), 'r', 'LineWidth', 2);  % Plot output 2
-hold on;
-yline(ref(2:2), 'k--', 'LineWidth', 1.5);  % Plot reference input
-xlabel('Time');
-ylabel('Output 2');
-legend('Output 2', 'Reference');
-title('Simulated Response of Multi-Output System - Output 2');
-grid on;
 hold off;
-end
 %% Tuning
 
 % Define weighting factors
