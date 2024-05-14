@@ -78,7 +78,7 @@ class ReinforcementLearningEnvironment:
         self.epsilon = 1  # Exploration rate
         self.discount_factor =0.9
         self.learning_rate=1
-        self.xi = 0.9998
+        self.xi = 0.9999
         self.firstLogTime=0
         self.loginterval=120
 
@@ -95,7 +95,7 @@ class ReinforcementLearningEnvironment:
         Q_table = np.zeros((num_states, num_actions))
         return Q_table, states, actions
 
-    def reward_function(self, temperature_room, CO2_room):
+    def reward_function(self, temperature_room:float, CO2_room:float,total_energy_consumption: float):
         temperature_variance = 0.272
         CO2_variance = 151.375
         requested_room_temperature = 23
@@ -104,8 +104,14 @@ class ReinforcementLearningEnvironment:
         temperature_reward = -((temperature_room - requested_room_temperature) / temperature_variance) ** 2
         CO2_adjusted = max(CO2_average_concentration_outside, CO2_room)
         CO2_reward = -((CO2_adjusted - CO2_average_concentration_outside) / CO2_variance) ** 2
+        
+        power_reward=-(total_energy_consumption*9/4600)
 
-        return [temperature_reward, CO2_reward]
+        return [temperature_reward, CO2_reward,power_reward]
+    
+    def calculate_total_energy_consumption(Fans,Q_ech1,Q_ech2,Q_hp):
+        total_energy_consumption=Fans*150/100+Fans*150/100+Q_ech1*1150/100+Q_ech2*1150/100+abs(Q_hp)*2000/100
+        return total_energy_consumption
     def convert_actions_to_values(self, actions):
         
         action_values = {
@@ -159,7 +165,10 @@ class ReinforcementLearningEnvironment:
         td_error = td_target - self.Q_table[state_index][action_index]
         self.Q_table[state_index][action_index] += self.learning_rate * td_error
         self.epsilon = self.epsilon*self.xi
-        self.learning_rate = self.learning_rate*self.xi
+        if (self.learning_rate < 0.1):
+            self.learning_rate = 0.1
+        elif(self.learning_rate > 0.1):
+            self.learning_rate = self.learning_rate*self.xi
     def get_Q_row(self, states):
         state_index = (states['temperature_outside'] * self.num_temp_room_states * self.num_co2_room_states  * self.num_time_of_day_states +
                        states['temperature_room'] * self.num_co2_room_states * self.num_time_of_day_states +

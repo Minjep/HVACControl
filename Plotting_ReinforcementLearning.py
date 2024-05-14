@@ -46,9 +46,25 @@ def reward_function_one_example():
     plt.show()
     
     
+def energy_reward_function():
+    x_values = [0, 4600]
+    y_values = [0, -9]
+
+    # Plot the line
+    plt.figure(figsize=(6, 3))
+    plt.plot(x_values, y_values, linestyle='-')
+
+    # Add title and labels
+    plt.title('Reward function for energy consumption')
+    plt.xlabel('Energy [W]')
+    plt.ylabel('Reward')
+    plt.tight_layout()
+    plt.show()
+    
+    
 def main():
     
-    reward_function_one_example()
+    energy_reward_function()
    
     
    

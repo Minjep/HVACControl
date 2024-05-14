@@ -2,11 +2,12 @@ clc
 clear
 close all
 % Specify in the begining
-file_path = 'log_10.92.0.59.csv';
-temperature_outside = 19;
+file_path = '/Users/jakob/Desktop/log_10.92.1.20.csv';
+temperature_outside = -9;
 %% load data or create filtered data file
-prefix = 'filtered_data';
+
 str_temp = num2str(temperature_outside);
+prefix = ['filtered_data_', str_temp];
 
 % Check if any files with the specified prefix exist
 file_list = dir([prefix, '*']);
@@ -56,7 +57,7 @@ co2_room=data(:,22);
 damper_recirc_pos=data(:,24);
 epsilon = zeros(N,1);
 alpha = zeros(N,1);
-Xi=0.99975;
+Xi=0.9999;
 temp=0;
 for i=1:N
     epsilon(i) = 1*Xi^i;
@@ -81,9 +82,9 @@ end
 figure('Position', [100, 100, 800, 400])
 subplot(2, 1, 1);
 plot(temperature_room);
-title('Simulated room temperature with outside temperatue set to 19 °C');
+title('Simulated room temperature with outside temperatue set to -7 °C');
 %legend('Reward Sum');
-%xline(xline_Temp,'r:','linewidth',2, 'HandleVisibility', 'off');
+xline(xline_Temp,'r:','linewidth',2, 'HandleVisibility', 'off');
 yline(target_room_temperature,'r:','linewidth',2)
 ylabel("Room temperature [°C]")
 xlabel("Time [minutes]")
