@@ -277,7 +277,7 @@ if __name__ == "__main__":
         Y=np.array([[23],[400]],float)
         print("")
         t= time.time() 
-        while(epsilon>0.001):
+        while(epsilon>0.0001):
             q_row = output_to_Q_row(Y, tempRoomSteps, co2RoomSteps,tempOutSteps,T_out)
 
             fan_action,ech1_action,ech2_action,hp_action,bypass_action,recirc_action,action_index=choose_Action(Q,epsilon,q_row,numberOfActions,fanSteps,ech1Steps,ech2Steps,hpSteps,bypassSteps,statesSteps)
