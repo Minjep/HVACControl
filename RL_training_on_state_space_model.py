@@ -261,7 +261,7 @@ if __name__ == "__main__":
     discount_factor=0.9
     learning_rate=1
     epsilon=1
-    psi=0.999999
+    psi=0.9999999
 
     i=1
     temperatures = [-5, 1, 10, 16, 25]
