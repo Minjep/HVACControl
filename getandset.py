@@ -165,7 +165,10 @@ class ReinforcementLearningEnvironment:
         td_error = td_target - self.Q_table[state_index][action_index]
         self.Q_table[state_index][action_index] += self.learning_rate * td_error
         self.epsilon = self.epsilon*self.xi
-        self.learning_rate = self.learning_rate*self.xi
+        if (self.learning_rate < 0.1):
+            self.learning_rate = 0.1
+        elif(self.learning_rate > 0.1):
+            self.learning_rate = self.learning_rate*self.xi
     def get_Q_row(self, states):
         state_index = (states['temperature_outside'] * self.num_temp_room_states * self.num_co2_room_states  * self.num_time_of_day_states +
                        states['temperature_room'] * self.num_co2_room_states * self.num_time_of_day_states +
