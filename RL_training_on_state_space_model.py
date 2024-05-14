@@ -7,8 +7,8 @@ from multiprocessing import Pool
 import time
 
 # Use JIT to optimize functions
-@jit(nopython=True)
-def reward_function(temperature_room: float, CO2_room: float) -> np.ndarray:
+#@jit(nopython=True)
+def reward_function(temperature_room: float, CO2_room: float,total_energy_consumption: float) -> np.ndarray:
     temperature_variance = 0.272
     CO2_variance = 151.375
     requested_room_temperature = 23
@@ -18,10 +18,16 @@ def reward_function(temperature_room: float, CO2_room: float) -> np.ndarray:
     CO2_adjusted = max(CO2_average_concentration_outside, CO2_room)
     CO2_reward = -((CO2_adjusted - CO2_average_concentration_outside) / CO2_variance) ** 2
     
-    rewards = np.array([temperature_reward, CO2_reward])
+    power_reward=-(total_energy_consumption*9/4600)
+
+    rewards = np.array([temperature_reward, CO2_reward,power_reward])
     return rewards
 
-@jit(nopython=True)
+def calculate_total_energy_consumption(Fans,Q_ech1,Q_ech2,Q_hp):
+    total_energy_consumption=Fans*150/100+Fans*150/100+Q_ech1*1150/100+Q_ech2*1150/100+abs(Q_hp)*2000/100
+    return total_energy_consumption
+
+#@jit(nopython=True)
 def update_Q(Q, state_index, action_index, rewards, next_state_index, discount_factor, learning_rate):
     rewards = np.sum(rewards)
     best_next_action = np.argmax(Q[next_state_index])
@@ -30,7 +36,7 @@ def update_Q(Q, state_index, action_index, rewards, next_state_index, discount_f
     Q[state_index][action_index] += learning_rate * td_error
     return Q
 
-@jit(nopython=True)
+#@jit(nopython=True)
 def simModel(xR, xV, u, recirc):
     AR = np.array([[810.5, 8.8], [48.0, 879.8]]) * 1e-3
     BR = np.array([[-1.2, -0.1, -0.2, 0.0, -1.1, -2.2],
@@ -70,7 +76,7 @@ def simModel(xR, xV, u, recirc):
         xk1R = AR.dot(xR) + BR.dot(u)
         return xk1R, xk1V, yV
 
-@jit(nopython=True)
+#@jit(nopython=True)
 def output_to_Q_row(Y, tempRoomSteps, co2RoomSteps,tempOutSteps,tempOut):
     """
     Converts the output Y to an index for the Q-matrix, accounting for out-of-range values.
@@ -121,7 +127,8 @@ def output_to_Q_row(Y, tempRoomSteps, co2RoomSteps,tempOutSteps,tempOut):
     q_index = (temp_index * co2RoomSteps * tempOutSteps) + (co2_index * tempOutSteps) + tempOut_index
 
     return q_index
-@jit(nopython=True)
+
+#@jit(nopython=True)
 def choose_Action(Q_matrix:np.array,epsilon:float,row:int,number_of_actions:int,fanSteps:int,ech1Steps:int,ech2Steps:int,hpSteps:int,bypassSteps:int,statesSteps:int):
     random_number = random.random()
 
@@ -134,7 +141,8 @@ def choose_Action(Q_matrix:np.array,epsilon:float,row:int,number_of_actions:int,
         
     fan_action,ech1_action,ech2_action,hp_action,bypass_action,recirc_action,index = convert_action_index_to_actions(action_index,fanSteps,ech1Steps,ech2Steps,hpSteps,bypassSteps,statesSteps)
     return fan_action,ech1_action,ech2_action,hp_action,bypass_action,recirc_action,index
-@jit(nopython=True)
+
+#@jit(nopython=True)
 def find_optimal_action(Q_matrix:np.array,row:int):
 
 
@@ -145,7 +153,8 @@ def find_optimal_action(Q_matrix:np.array,row:int):
     max_action_index = np.argmax(row_values)
 
     return max_action_index
-@jit(nopython=True)
+
+#@jit(nopython=True)
 def find_random_action(number_of_actions:int):
     """
     Select a random action index.
@@ -158,7 +167,8 @@ def find_random_action(number_of_actions:int):
     """ 
     random_integer = random.randint(0, number_of_actions-1)
     return random_integer
-@jit(nopython=True)
+
+#@jit(nopython=True)
 def convert_action_index_to_actions(index:int,fanSteps,ech1Steps,ech2Steps,hpSteps,bypassSteps,statesSteps):
     fan_min, fan_max = 30, 100  # Assuming these are indices for fan settings
     ech_min, ech_max = 0, 100  # Assuming these are indices for economizer settings
@@ -196,7 +206,8 @@ def convert_action_index_to_actions(index:int,fanSteps,ech1Steps,ech2Steps,hpSte
     #fan_step*(ech1Steps*ech2Steps*hpSteps*bypassSteps*statesSteps)+ech1_step*(ech2Steps*hpSteps*bypassSteps*statesSteps)+ech2_step*(hpSteps*bypassSteps*statesSteps)+hp_step*(bypassSteps*statesSteps)+bypass_step*statesSteps+recirc_step
 
     return fan_action,ech1_action,ech2_action,hp_action,bypass_action,recirc_action,index  
-@jit(nopython=True)
+
+#@jit(nopython=True)
 def update_Q(Q:np.array, state_index:int, action_index:int, rewards:np.array, next_state_index:int, discount_factor:float, learning_rate:float):
     # Q-learning update rule
     rewards = sum(rewards)
@@ -205,7 +216,8 @@ def update_Q(Q:np.array, state_index:int, action_index:int, rewards:np.array, ne
     td_error = td_target - Q[state_index][action_index]
     Q[state_index][action_index] += learning_rate * td_error
     return Q
-@jit(nopython=True)
+
+#@jit(nopython=True)
 def saveRewards(type_,reward,header):
         # Path for the CSV file
         file_path = f'{type_}.csv'
@@ -249,7 +261,7 @@ if __name__ == "__main__":
     discount_factor=0.9
     learning_rate=1
     epsilon=1
-    psi=0.9999999
+    psi=0.999999
 
     i=1
     temperatures = [-5, 1, 10, 16, 25]
@@ -280,12 +292,15 @@ if __name__ == "__main__":
 
             X_recirc,X_vent,Y=simModel(X_recirc,X_vent,U,recirc_state)
 
-            reward=reward_function(Y[0,0],Y[1,0])
+            total_energy_consumption=calculate_total_energy_consumption(fan_action,ech1_action,ech2_action,hp_action)
+            reward=reward_function(Y[0,0],Y[1,0],total_energy_consumption)
 
             next_state_index=output_to_Q_row(Y, tempRoomSteps, co2RoomSteps,tempOutSteps,T_out)
             update_Q(Q, q_row, action_index, reward, next_state_index, discount_factor, learning_rate)
 
             learning_rate=learning_rate*psi
+            if learning_rate<0.1:
+                learning_rate=0.1
             epsilon=epsilon*psi
 
             i=i+1
@@ -308,9 +323,9 @@ if __name__ == "__main__":
                     writer = csv.writer(file)
                     # If the file does not exist, write the header first
                     if not file_exists:
-                        writer.writerow(["fan", "ech1", "ech2", "hp", "bypass", "recirc", "T_out", "rewardsTemp", "rewardCo2", "outputTemp", "outputCo2"])
+                        writer.writerow(["epsilon","fan", "ech1", "ech2", "hp", "bypass", "recirc", "T_out", "rewardsTemp", "rewardCo2","rewardPower", "outputTemp", "outputCo2"])
                     # Write accumulated data
-                    writer.writerow([fan_action,ech1_action,ech2_action,hp_action,bypass_action,recirc_action,T_out,reward[0],reward[1],Y[0,0],Y[1,0]])
+                    writer.writerow([epsilon,fan_action,ech1_action,ech2_action,hp_action,bypass_action,recirc_action,T_out,reward[0],reward[1],reward[2],Y[0,0],Y[1,0]])
                 
                 # Clear the accumulated data after saving
                 accumulated_data = []
