@@ -86,6 +86,14 @@ class LQR_Controller:
         self.airmaster_state=2
         
     def set_current_damper_recirc_state(self):
+        """
+        Updates the damper recirculation state based on current CO2 levels, temperature,
+        and the outdoor air temperature.
+
+        Adjusts the CO2 thresholds based on the current temperature output. Switches
+        between ventilation and recirculation modes depending on the CO2 levels and
+        temperature conditions.
+        """
         alpha = 1 + min(4, (self.outputs[0] - self.references[0])) / 4
         self.co2_low = alpha * 600
         self.co2_high = alpha * 900
@@ -99,7 +107,11 @@ class LQR_Controller:
         
 
     def estimate_next_state(self):
-        """have to be run after the respons from the simulataion
+        """
+        Estimates the next state of the system after receiving a response from the simulation.
+
+        Depending on the current damper recirculation state, it updates the estimated state
+        variables for either ventilation or recirculation mode.
         """
         if self.damper_recirc_state == 0: #ventilation
             self.x_vent_est = self.A_vent.dot(self.x_vent_est) + self.B_vent.dot(self.inputs)+self.L_vent.dot(self.C_vent.dot(self.x_vent_est)-self.outputs)
@@ -107,9 +119,12 @@ class LQR_Controller:
             self.x_recirc_est = self.A_recirc.dot(self.x_recirc_est) + self.B_recirc.dot(self.inputs)+self.L_recirc.dot(self.C_recirc.dot(self.x_recirc_est)-self.outputs)
         
     def state_resetting(self):
-        """This function have to be run after calculate_input and the simuleted respons corresponding the the inputs 
-        Because the first self.x_xxxx_est is corresponding to the current time but the second is for one timestep
-        into the future.
+        """
+        Resets the state estimates after calculating inputs and receiving the simulated response
+        corresponding to the inputs.
+
+        This function ensures that the first state estimate corresponds to the current time and the
+        second state estimate is for one timestep into the future.
         """
         if self.damper_recirc_state == 0: #ventilation
             self.outputs_est = self.C_vent.dot(self.x_vent_est)
@@ -122,12 +137,28 @@ class LQR_Controller:
             
         
     def calculate_inputs(self):
+        """
+        Calculates the control inputs based on the current state estimates and references.
+
+        Depending on the current damper recirculation state, it computes the control inputs
+        for either ventilation or recirculation mode.
+        """
         if self.damper_recirc_state == 0: #ventilation
             self.inputs = self.K_vent.dot(self.x_vent_est) + self.N_dash.dot(self.references)
         else: #ventilation
             self.inputs = self.K_recirc.dot(self.x_recirc_est) + self.N_dash.dot(self.references)
 
     def initialize_variables(self,temp_ref, co2_ref,temp_init,co2_init,t_ao):
+        """
+        Initializes the reference values, initial outputs, and outdoor air temperature.
+
+        Parameters:
+            temp_ref (float): Reference temperature.
+            co2_ref (float): Reference CO2 level.
+            temp_init (float): Initial temperature.
+            co2_init (float): Initial CO2 level.
+            t_ao (float): Outdoor air temperature.
+        """
         self.references[0] = temp_ref
         self.references[1] = co2_ref
         self.T_cool = self.references[0] + 1
