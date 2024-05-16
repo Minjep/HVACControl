@@ -23,12 +23,12 @@ class LQR_Controller:
         self.C_recirc_inv = np.array([[-0.0169, 0.0000],
                                       [0.0142, -0.0003]])
         
-        self.K_recirc = ([[-429, 23.915],
-                          [-172.15, 9.5906],
-                          [174.2, -9.7021],
-                          [-578.64, 32.2],
-                          [-20.622, 6.2327],
-                          [0, 0]])
+        self.K_recirc = np.array([[-429, 23.915],
+                                  [-172.15, 9.5906],
+                                  [174.2, -9.7021],
+                                  [-578.64, 32.2],
+                                  [-20.622, 6.2327],
+                                  [0, 0]])
         self.L_recirc = np.array([[-0.022602, -9.3051*1e-05], 
                                   [-0.016509, 0.00019963]]) 
     
@@ -50,25 +50,25 @@ class LQR_Controller:
         self.L_vent = np.array([[0, 0], 
                                 [0, 0]]) 
         
-        self.K_vent = ([[0, 0],
-                        [0, 0],
-                        [0, 0],
-                        [0, 0],
-                        [0, 0],
-                        [0, 0]])
+        self.K_vent = np.array([[0, 0],
+                               [0, 0],
+                               [0, 0],
+                               [0, 0],
+                               [0, 0],
+                               [0, 0]])
         
-        self.outputs_est = ([[0],
-                             [0]])
+        self.outputs_est = np.array([[0],
+                                     [0]])
         
-        self.inputs = ([[0],
-                        [0],
-                        [0],
-                        [0],
-                        [0],
-                        [0]])
+        self.inputs = np.array([[0],
+                                [0],
+                                [0],
+                                [0],
+                                [0],
+                                [0]])
         
-        self.outputs = ([[0],
-                         [0]])
+        self.outputs = np.array([[0],
+                                 [0]])
         
         self.references = np.array([[0], 
                                     [0]])
@@ -99,12 +99,12 @@ class LQR_Controller:
         
 
     def estimate_next_state(self):
-        """have to be rund of the respons from the simulataion
+        """have to be run after the respons from the simulataion
         """
         if self.damper_recirc_state == 0: #ventilation
-            self.x_vent_est = self.A_vent*self.x_vent_est + self.B_vent*self.inputs+self.L_vent*(self.C_vent*self.x_vent_est-self.outputs)
+            self.x_vent_est = self.A_vent.dot(self.x_vent_est) + self.B_vent.dot(self.inputs)+self.L_vent.dot(self.C_vent.dot(self.x_vent_est)-self.outputs)
         else: #recirculation
-            self.x_recirc_est = self.A_recirc*self.x_recirc_est + self.B_recirc*self.inputs+self.L_recirc*(self.C_recirc*self.x_recirc_est-self.outputs)
+            self.x_recirc_est = self.A_recirc.dot(self.x_recirc_est) + self.B_recirc.dot(self.inputs)+self.L_recirc.dot(self.C_recirc.dot(self.x_recirc_est)-self.outputs)
         
     def state_resetting(self):
         """This function have to be run after calculate_input and the simuleted respons corresponding the the inputs 
@@ -123,9 +123,9 @@ class LQR_Controller:
         
     def calculate_inputs(self):
         if self.damper_recirc_state == 0: #ventilation
-            self.inputs = self.K_vent*self.x_vent_est + self.N_dash * self.references
+            self.inputs = self.K_vent.dot(self.x_vent_est) + self.N_dash.dot(self.references)
         else: #ventilation
-            self.inputs = self.K_recirc*self.x_recirc_est + self.N_dash * self.references
+            self.inputs = self.K_recirc.dot(self.x_recirc_est) + self.N_dash.dot(self.references)
 
     def initialize_variables(self,temp_ref, co2_ref,temp_init,co2_init,t_ao):
         self.references[0] = temp_ref
