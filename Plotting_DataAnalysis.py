@@ -4,6 +4,8 @@ import os
 from datetime import datetime, timedelta, timezone
 import pandas as pd
 import numpy as np
+from AirmasterDataLib.loadData import load_and_plot
+
 
 def rqf_org(data):
     realtime=[]
@@ -186,11 +188,11 @@ def illustrate_start_time_issue(data,data_cropped,columnsToShow,tele_map):
             filtered_data = data[key][(data[key]['unix time'] >= start_time_unix) & (data[key]['unix time'] <= end_time_unix)]
 
             # Plot data on the first subplot
-            axs[0].plot(filtered_data['unix time'][::60], filtered_data['values'][::60], label=ADL.load_and_plot.translate_code(tele_map,key)) 
+            axs[0].plot(filtered_data['unix time'][::60], filtered_data['values'][::60], label=load_and_plot.translate_code(tele_map,key)) 
             
             
             # Plot data on the second subplot
-            axs[1].plot(filtered_data_cropped['unix time'][::60], filtered_data_cropped[key][::60],label=ADL.load_and_plot.translate_code(tele_map,key))
+            axs[1].plot(filtered_data_cropped['unix time'][::60], filtered_data_cropped[key][::60],label=load_and_plot.translate_code(tele_map,key))
             
     unix_times = np.arange(start_time_unix, end_time_unix + 1)
     start_time = min(unix_times) // 3600 * 3600  # Round to the nearest hour
@@ -206,31 +208,31 @@ def illustrate_start_time_issue(data,data_cropped,columnsToShow,tele_map):
     axs[0].set_title('Raw data')
     axs[0].set_xlabel('time', fontsize='large')
     axs[0].set_ylabel('values', fontsize='large')
-    axs[0].set_ylim(0, 120)
+    axs[0].set_ylim(0, 140)
     axs[0].legend(loc="upper right",fontsize='small')
     
    
     axs[1].set_xticks(x_ticks, date_ticks)
     axs[1].set_xticklabels(date_ticks, rotation=90) 
-    axs[1].set_title('aligned data')
+    axs[1].set_title('Aligned data')
     axs[1].set_xlabel('time', fontsize='large')
     axs[1].set_ylabel('values', fontsize='large')
-    axs[1].set_ylim(0, 120)
+    axs[1].set_ylim(0, 140)
     axs[1].legend(loc="upper right",fontsize='small')
     
     plt.tight_layout()
     
 if __name__ == "__main__":    
     dataOrg, tele_map = FND.getData()
-    rqf_org(dataOrg)
-    # dataFilledMissingDataPoints = FND.loadPklFile("processedData.pkl")
+    #rqf_org(dataOrg)
+    dataFilledMissingDataPoints = FND.loadPklFile("processedData.pkl")
     # #rqf_missing_data_points(dataFilledMissingDataPoints,dataOrg)
     # #t_ao_all_data(dataFilledMissingDataPoints)
     # #dataDay = FND.loadPklFile("dayTimeData.pkl")
     # #t_ao_only_day_data(dataDay,dataFilledMissingDataPoints)
-    # dataCropped = FND.loadPklFile('croppedData.pkl')
-    # columnsToShow = ['rh_ao','rqt','t_ar','rh_ar']
-    # illustrate_start_time_issue(dataFilledMissingDataPoints,dataCropped,columnsToShow,tele_map)
+    dataCropped = FND.loadPklFile('croppedData.pkl')
+    columnsToShow = ['rqf','t_ao','t_ar']
+    illustrate_start_time_issue(dataFilledMissingDataPoints,dataCropped,columnsToShow,tele_map)
     
     plt.show()
     

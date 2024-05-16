@@ -33,9 +33,11 @@ def process_data_and_create_csv(force=False,createCSV=False):
 
 
 def main():
-    process_data_and_create_csv(force=False,createCSV=True)       
+    dataFinal = loadPklFile("finalData.pkl")
+    process_data_and_create_csv(force=True,createCSV=True)       
 
 if __name__ == "__main__":
+    
     main()
     
     
