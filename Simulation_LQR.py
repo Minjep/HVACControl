@@ -147,6 +147,19 @@ class LQR_Controller:
             self.inputs = self.K_vent.dot(self.x_vent_est) + self.N_dash.dot(self.references)
         else: #ventilation
             self.inputs = self.K_recirc.dot(self.x_recirc_est) + self.N_dash.dot(self.references)
+            
+        for input in [0,1,2,4]: #Fsup(t) Qech1(t) Qech2(t) Dbypass(t)
+            if self.inputs[input] < 0:
+                self.inputs[input] = 0
+            elif self.inputs[input] > 100:
+                self.inputs[input] = 100
+        
+        #  Qhp(t)
+        if self.inputs[3] < -100:
+            self.inputs[3] = -100
+        elif self.inputs[3] > 100:
+            self.inputs[3] = 100
+            
 
     def initialize_variables(self,temp_ref, co2_ref,temp_init,co2_init,t_ao):
         """
