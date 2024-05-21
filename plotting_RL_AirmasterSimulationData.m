@@ -2,8 +2,8 @@ clc
 clear
 close all
 % Specify in the begining
-file_path = '/Users/jakob/Desktop/log_10.92.1.20.csv';
-temperature_outside = -9;
+file_path = '3.csv';
+temperature_outside = 15;
 %% load data or create filtered data file
 
 str_temp = num2str(temperature_outside);
@@ -46,6 +46,7 @@ end
 
 
 %%
+data = data(121317:end,:);
 iteration = data(:,1);
 N = length(iteration);
 target_room_temperature = data(1,4);
@@ -55,6 +56,10 @@ temperature_room = data(:,8);
 temperature_inlet = data(:,9);
 co2_room=data(:,22);
 damper_recirc_pos=data(:,24);
+ech_1_pct = data(:,17);
+ech_2_pct = data(:,18);
+hvac_pct = data(:,20);
+
 epsilon = zeros(N,1);
 alpha = zeros(N,1);
 Xi=0.9999;
@@ -69,11 +74,12 @@ for i=1:N
 end
 
 % calculate reward
-rewards=zeros(N,2);
+rewards=zeros(N,3);
 reward_sum=zeros(N,1);
 
 for i=1:N
-    rewards(i,:) = reward_function(temperature_room(i),co2_room(i));
+    rewards(i,1:2) = reward_function(temperature_room(i),co2_room(i));
+    rewards(i,3) = (2*1.5*requested_flow(i) + 11.5*ech_1_pct(i) + 11.5*ech_2_pct(i) + 20*hvac_pct(i))*9/4600;
     reward_sum(i) = sum(rewards(i,:));
 end
 
@@ -82,9 +88,9 @@ end
 figure('Position', [100, 100, 800, 400])
 subplot(2, 1, 1);
 plot(temperature_room);
-title('Simulated room temperature with outside temperatue set to -7 °C');
+title('Simulated room temperature with outside temperatue set to 15 °C');
 %legend('Reward Sum');
-xline(xline_Temp,'r:','linewidth',2, 'HandleVisibility', 'off');
+%xline(xline_Temp,'r:','linewidth',2, 'HandleVisibility', 'off');
 yline(target_room_temperature,'r:','linewidth',2)
 ylabel("Room temperature [°C]")
 xlabel("Time [minutes]")
@@ -126,22 +132,40 @@ set(get(gca, 'XLabel'), 'FontSize', 14); % Change font size of x-axis label
 set(get(gca, 'YLabel'), 'FontSize', 14); % Change font size of y-axis label
 legend('Temperature room', 'Requested inlet temperature', 'Target room temperature');
 %% CO2 room with input
-%%  temperature room with inputs
-figure('Position', [100, 100, 800, 400])
 
-plot(co2_room);
-hold on
-plot(requested_flow)
+
+figure('Position', [100, 100, 800, 400])
+subplot(2, 1, 1);
+plot(iteration(N-10000:N),co2_room(N-10000:N));
 title('Simulated room CO2 concentration');
 %legend('Reward Sum');
 %xline(xline_Temp,'r:','linewidth',2, 'HandleVisibility', 'off');
+%yline(target_room_temperature,'r:','linewidth',2)
 ylabel("Room CO2 concentration [ppm]")
 xlabel("Time [minutes]")
 set(gca, 'FontSize', 12); % Change font size of ticks
 set(get(gca, 'Title'), 'FontSize', 16); % Change font size of title
 set(get(gca, 'XLabel'), 'FontSize', 14); % Change font size of x-axis label
 set(get(gca, 'YLabel'), 'FontSize', 14); % Change font size of y-axis label
-legend('CO2 room', 'Requested flow')
+legend('CO2 room');
+
+
+subplot(2, 1, 2);
+plot(iteration(N-10000:N),damper_recirc_pos(N-10000:N))
+hold on
+plot(iteration(N-10000:N),requested_flow(N-10000:N))
+title('Recirculation inside damper position and requested flow');
+%legend('Reward Sum');
+%xline(xline_Temp,'r:','linewidth',2, 'HandleVisibility', 'off');
+ylim([-5 100])
+ylabel("Inputs [%]")
+xlabel("Time [minutes]")
+set(gca, 'FontSize', 12); % Change font size of ticks
+set(get(gca, 'Title'), 'FontSize', 16); % Change font size of title
+set(get(gca, 'XLabel'), 'FontSize', 14); % Change font size of x-axis label
+set(get(gca, 'YLabel'), 'FontSize', 14); % Change font size of y-axis label
+
+legend('Recirculation inside damper position','Requested flow');
 
 
 %% simulated reward sum
@@ -160,7 +184,8 @@ set(get(gca, 'YLabel'), 'FontSize', 14); % Change font size of y-axis label
 
 
 %% individual rewards
-subplot(2, 1, 1);
+figure('Position', [100, 100, 800, 400])
+subplot(3, 1, 1);
 plot(iteration(N-10000:N),rewards(N-10000:N,1));
 
 title('Temperature reward');
@@ -173,10 +198,23 @@ set(get(gca, 'Title'), 'FontSize', 16); % Change font size of title
 set(get(gca, 'XLabel'), 'FontSize', 14); % Change font size of x-axis label
 set(get(gca, 'YLabel'), 'FontSize', 14); % Change font size of y-axis label
 
-subplot(2, 1, 2);
+subplot(3, 1, 2);
 plot(iteration(N-10000:N),rewards(N-10000:N,2));
 
 title('CO2 Reward');
+%legend('CO2 Reward');
+%xline(xline_Temp,'r:','linewidth',2);
+ylabel("Reward")
+xlabel("Time [minutes]")
+set(gca, 'FontSize', 12); % Change font size of ticks
+set(get(gca, 'Title'), 'FontSize', 16); % Change font size of title
+set(get(gca, 'XLabel'), 'FontSize', 14); % Change font size of x-axis label
+set(get(gca, 'YLabel'), 'FontSize', 14); % Change font size of y-axis label
+
+subplot(3, 1, 3);
+plot(iteration(N-10000:N),rewards(N-10000:N,3));
+
+title('Power Reward');
 %legend('CO2 Reward');
 %xline(xline_Temp,'r:','linewidth',2);
 ylabel("Reward")

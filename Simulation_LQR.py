@@ -97,12 +97,12 @@ class LQR_Controller:
         alpha = 1 + min(4, (self.outputs[0] - self.references[0])) / 4
         self.co2_low = alpha * 600
         self.co2_high = alpha * 900
-        if self.damper_recirc_state == 0: #ventilation
+        if self.damper_recirc_state == 1: #ventilation
             if(self.outputs[1]>self.co2_high or (self.outputs[0]>self.T_cool and self.T_ao <(self.outputs[0]-0.5)) or (self.outputs[0]<self.T_heat and self.T_ao>(self.outputs[0]+0.5))):
-                self.damper_recirc_state = 1
+                self.damper_recirc_state = 0
         else: #recirculation
             if(self.outputs[1]<self.co2_low or (self.outputs[0] > self.T_cool and self.T_ao>(self.outputs[0]+0.5)) or (self.outputs[0]<self.T_heat and self.T_ao<(self.outputs[0]-0.5))):
-                self.damper_recirc_state = 0
+                self.damper_recirc_state = 1
         
         
 
