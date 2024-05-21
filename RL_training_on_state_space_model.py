@@ -307,7 +307,7 @@ if __name__ == "__main__":
            
             if (i%100000==0):
                 elapsed = time.time() - t
-                print('tid: ',elapsed)
+                print('tid: %.1f' % elapsed)
                 t = time.time()
                 np.save('Q.npy', Q)
                 print('100Tusinde iterationer: ',i//100000)
