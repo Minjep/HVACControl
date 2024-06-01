@@ -249,7 +249,7 @@ if __name__ == "__main__":
     start_co2=1000
     y=np.array([[start_temp],[start_co2]])
     are_we_in_recirc=False
-    t_ao=25
+    t_ao=-5
 
     RL=ReinforcementLearning("C:/Users/overg/Downloads/rl/Q.npy",t_ao)
     env=simulate_model()
