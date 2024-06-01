@@ -12,12 +12,5 @@ Welcome to the HVAC Control project! This project aims to provide a control syst
 Use the files or create new files with preTags such as Proccesing_ or Plotting_
 If new functions are needed add them to the lib
 
-
-## Contributing
-We welcome contributions from the community! If you find any issues or have suggestions for improvements, please feel free to open an issue or submit a pull request.
-
 ## License
 This project is licensed under the [MIT License](LICENSE).
-
-## Contact
-If you have any questions or need further assistance, please contact us at [email@example.com](mailto:email@example.com).
